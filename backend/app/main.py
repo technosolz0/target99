@@ -29,11 +29,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from app.core.seeds import seed_test_users
+
 # Seed initial mock contests on startup
 @app.on_event("startup")
 def startup_event():
     db = next(get_db())
     try:
+        # Seed test users
+        seed_test_users(db)
+        
         if db.query(Contest).count() == 0:
             now = datetime.now()
             contests = [
