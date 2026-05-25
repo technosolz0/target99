@@ -26,6 +26,7 @@ class UserResponse(BaseModel):
     bonus_balance: float
     kyc_status: str
     is_banned: bool
+    fcm_token: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -102,3 +103,15 @@ class AdminStatsResponse(BaseModel):
     total_deposits: float
     total_winnings_paid: float
     active_contests: int
+
+class FCMTokenRequest(BaseModel):
+    fcm_token: str
+
+class SendUserNotificationRequest(BaseModel):
+    user_id: int
+    title: str
+    body: str
+
+class SendAllNotificationRequest(BaseModel):
+    title: str
+    body: str

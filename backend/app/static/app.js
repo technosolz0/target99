@@ -98,6 +98,10 @@ function updateHeaders(tab) {
             el.pageTitle.innerText = "Withdrawal Controls";
             el.pageSubtitle.innerText = "Verify KYC PAN logs and approve payout requests";
             break;
+        case 'notifications':
+            el.pageTitle.innerText = "Notification Center";
+            el.pageSubtitle.innerText = "Send custom Firebase push messages directly to client devices";
+            break;
     }
 }
 
@@ -147,6 +151,78 @@ function setupEventHandlers() {
             } catch (err) {
                 console.error(err);
                 showToast("Failed to create contest: " + err.message, true);
+            }
+        });
+    }
+    
+    // Push Notification Recipient toggle
+    const recipientType = document.getElementById('push-recipient-type');
+    const userIdGroup = document.getElementById('push-user-id-group');
+    if (recipientType && userIdGroup) {
+        recipientType.addEventListener('change', (e) => {
+            if (e.target.value === 'user') {
+                userIdGroup.style.display = 'block';
+            } else {
+                userIdGroup.style.display = 'none';
+            }
+        });
+    }
+
+    // Send Push Notification Click
+    const btnSendPush = document.getElementById('btn-send-push');
+    if (btnSendPush) {
+        btnSendPush.addEventListener('click', async () => {
+            const type = document.getElementById('push-recipient-type').value;
+            const title = document.getElementById('push-title').value.trim();
+            const body = document.getElementById('push-body').value.trim();
+            
+            if (!title || !body) {
+                showToast("Please enter both title and body.", true);
+                return;
+            }
+            
+            btnSendPush.disabled = true;
+            btnSendPush.innerText = "Sending...";
+            
+            try {
+                let endpoint, payload;
+                if (type === 'user') {
+                    const userId = parseInt(document.getElementById('push-user-id').value);
+                    if (isNaN(userId)) {
+                        showToast("Please enter a valid User ID.", true);
+                        btnSendPush.disabled = false;
+                        btnSendPush.innerText = "Send Notification";
+                        return;
+                    }
+                    endpoint = `${API_BASE}/admin/notifications/send-user`;
+                    payload = { user_id: userId, title, body };
+                } else {
+                    endpoint = `${API_BASE}/admin/notifications/send-all`;
+                    payload = { title, body };
+                }
+                
+                const res = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (!res.ok) {
+                    const errorText = await res.text();
+                    throw new Error(errorText || "Server error");
+                }
+                
+                showToast("Notification request processed!");
+                document.getElementById('push-title').value = '';
+                document.getElementById('push-body').value = '';
+                if (type === 'user') {
+                    document.getElementById('push-user-id').value = '';
+                }
+            } catch (err) {
+                showToast("Error: " + err.message, true);
+            } finally {
+                btnSendPush.disabled = false;
+                btnSendPush.innerText = "Send Notification";
             }
         });
     }
@@ -303,7 +379,7 @@ async function loadContests() {
 
 function renderContestsTable(contestsList) {
     if (contestsList.length === 0) {
-        el.contestsTable.innerHTML = `<tr><td colspan="7" class="table-placeholder">No contests defined yet.</td></tr>`;
+        el.contestsTable.innerHTML = `<tr><td colspan="8" class="table-placeholder">No contests defined yet.</td></tr>`;
         return;
     }
     
@@ -314,6 +390,10 @@ function renderContestsTable(contestsList) {
         
         const startTimeStr = new Date(c.start_time).toLocaleString();
         
+        const actionBtn = c.status !== 'COMPLETED'
+            ? `<button class="btn btn-action btn-unban" onclick="completeContest(${c.id})">Complete</button>`
+            : `<span class="text-muted" style="font-size:12px;">Payout Done</span>`;
+
         return `
             <tr>
                 <td>${c.id}</td>
@@ -330,6 +410,11 @@ function renderContestsTable(contestsList) {
                 <td><strong>₹${c.prize_pool.toFixed(2)}</strong></td>
                 <td>${startTimeStr}</td>
                 <td><span class="badge ${statusBadge}">${c.status}</span></td>
+                <td>
+                    <div style="display:flex; gap:8px;">
+                        ${actionBtn}
+                    </div>
+                </td>
             </tr>
         `;
     }).join('');
@@ -394,5 +479,19 @@ async function approveWithdrawal(txId, approve) {
         loadDashboardData();
     } catch (err) {
         showToast(err.message, true);
+    }
+}
+
+async function completeContest(contestId) {
+    if (!confirm("Are you sure you want to complete this contest and pay out the winners?")) return;
+    try {
+        const res = await fetch(`${API_BASE}/admin/contests/${contestId}/complete`, {
+            method: 'POST'
+        });
+        if (!res.ok) throw new Error(await res.text());
+        showToast("Contest completed and payouts distributed!");
+        loadDashboardData();
+    } catch (err) {
+        showToast("Error completing contest: " + err.message, true);
     }
 }

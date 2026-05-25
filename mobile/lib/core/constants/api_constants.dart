@@ -32,4 +32,5 @@ class ApiConstants {
   static const String transactions = '/wallet/transactions';
   
   static const String referralDetails = '/referral/details';
+  static const String registerFcmToken = '/auth/fcm-token';
 }

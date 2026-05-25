@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:target99/core/constants/api_constants.dart';
 import 'package:target99/core/models/contest_model.dart';
 import 'package:target99/core/models/user_model.dart';
@@ -152,6 +153,11 @@ class DisconnectLeaderboardEvent extends AppEvent {}
 
 class LogoutEvent extends AppEvent {}
 
+class RegisterFcmTokenEvent extends AppEvent {
+  final String fcmToken;
+  RegisterFcmTokenEvent(this.fcmToken);
+}
+
 // --- AppBloc Implementation ---
 class AppBloc extends Bloc<AppEvent, AppState> {
   final ApiClient _apiClient;
@@ -173,6 +179,7 @@ class AppBloc extends Bloc<AppEvent, AppState> {
     on<UpdateLeaderboardDataEvent>(_onUpdateLeaderboardData);
     on<DisconnectLeaderboardEvent>(_onDisconnectLeaderboard);
     on<LogoutEvent>(_onLogout);
+    on<RegisterFcmTokenEvent>(_onRegisterFcmToken);
   }
 
   Future<void> _onSendOtp(SendOtpEvent event, Emitter<AppState> emit) async {
@@ -211,8 +218,28 @@ class AppBloc extends Bloc<AppEvent, AppState> {
       final response = await _apiClient.get(ApiConstants.me);
       final user = UserModel.fromJson(response.data);
       emit(state.copyWith(isAuthLoading: false, currentUser: user));
+      
+      // Request FCM permission and retrieve token
+      try {
+        final messaging = FirebaseMessaging.instance;
+        await messaging.requestPermission(alert: true, badge: true, sound: true);
+        final fcmToken = await messaging.getToken();
+        if (fcmToken != null) {
+          add(RegisterFcmTokenEvent(fcmToken));
+        }
+      } catch (fcmError) {
+        print("FCM initialization warning: $fcmError");
+      }
     } catch (e) {
       emit(state.copyWith(isAuthLoading: false, authError: e.toString().replaceAll('Exception: ', '')));
+    }
+  }
+
+  Future<void> _onRegisterFcmToken(RegisterFcmTokenEvent event, Emitter<AppState> emit) async {
+    try {
+      await _apiClient.post(ApiConstants.registerFcmToken, data: {'fcm_token': event.fcmToken});
+    } catch (e) {
+      print("Error registering FCM token on backend: $e");
     }
   }
 

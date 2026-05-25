@@ -4,7 +4,7 @@ import random
 import string
 from app.core.database import get_db
 from app.models import User
-from app.schemas import SendOTPRequest, VerifyOTPRequest, Token, UserResponse
+from app.schemas import SendOTPRequest, VerifyOTPRequest, Token, UserResponse, FCMTokenRequest
 from app.core.security import create_access_token, get_current_user
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -91,3 +91,13 @@ def verify_otp(request: VerifyOTPRequest, db: Session = Depends(get_db)):
 @router.get("/me", response_model=UserResponse)
 def get_me(current_user: User = Depends(get_current_user)):
     return current_user
+
+@router.post("/fcm-token")
+def register_fcm_token(
+    request: FCMTokenRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    current_user.fcm_token = request.fcm_token.strip()
+    db.commit()
+    return {"message": "FCM token updated successfully."}

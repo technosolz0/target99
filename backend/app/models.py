@@ -17,6 +17,7 @@ class User(Base):
     bonus_balance = Column(Float, default=0.0)
     kyc_status = Column(String, default="PENDING")  # PENDING, VERIFIED, REJECTED
     is_banned = Column(Boolean, default=False)
+    fcm_token = Column(String, nullable=True)
     
     participants = relationship("ContestParticipant", back_populates="user")
     transactions = relationship("WalletTransaction", back_populates="user")

@@ -100,6 +100,16 @@ class WalletService:
         )
         db.add(transaction)
         db.commit()
+        
+        # Send push notification
+        from app.core.notifications import send_push_to_user
+        send_push_to_user(
+            db,
+            user.id,
+            title="🏆 Contest Prize Credited!",
+            body=f"Congratulations! A prize of ₹{amount:.2f} has been credited to your Winnings wallet."
+        )
+        
         return transaction
 
     @staticmethod
@@ -113,6 +123,16 @@ class WalletService:
         )
         db.add(transaction)
         db.commit()
+        
+        # Send push notification
+        from app.core.notifications import send_push_to_user
+        send_push_to_user(
+            db,
+            user.id,
+            title="💰 Deposit Successful!",
+            body=f"₹{amount:.2f} has been successfully added to your Deposit wallet."
+        )
+        
         return transaction
 
     @staticmethod
@@ -190,3 +210,18 @@ class ReferralService:
         db.add(tx_referrer)
         db.add(tx_referred)
         db.commit()
+
+        # Send push notifications
+        from app.core.notifications import send_push_to_user
+        send_push_to_user(
+            db,
+            referrer.id,
+            title="🎁 Referral Bonus Credited!",
+            body=f"Your friend {referred_user.name or referred_user.phone} joined their first contest! ₹50.00 bonus has been credited to your wallet."
+        )
+        send_push_to_user(
+            db,
+            referred_user.id,
+            title="🎉 Welcome Referral Bonus!",
+            body="Thanks for signing up using a referral link! ₹20.00 welcome bonus has been credited to your wallet."
+        )

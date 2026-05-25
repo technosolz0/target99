@@ -99,13 +99,107 @@ def approve_withdrawal(id: int, approve: bool, db: Session = Depends(get_db)):
         
     if approve:
         tx.status = "SUCCESS"
+        db.commit()
+        db.refresh(tx)
+        
+        # Send push notification for successful withdrawal approval
+        from app.core.notifications import send_push_to_user
+        send_push_to_user(
+            db,
+            tx.user_id,
+            title="💸 Withdrawal Approved!",
+            body=f"Your withdrawal request of ₹{tx.amount:.2f} has been approved."
+        )
     else:
         tx.status = "FAILED"
         # Rollback: Refund the user's winning balance
         user = db.query(User).filter(User.id == tx.user_id).first()
         if user:
             user.winning_balance += tx.amount
+        db.commit()
+        db.refresh(tx)
+        
+        # Send push notification for rejected withdrawal
+        from app.core.notifications import send_push_to_user
+        send_push_to_user(
+            db,
+            tx.user_id,
+            title="❌ Withdrawal Rejected",
+            body=f"Your withdrawal request of ₹{tx.amount:.2f} was rejected. The amount has been refunded to your wallet."
+        )
+        
+    return tx
+
+# New Notification and Contest Completion Endpoints
+from app.schemas import SendUserNotificationRequest, SendAllNotificationRequest
+from app.core.notifications import send_push_to_user, send_push_to_all
+from app.models import ContestParticipant
+from app.services import WalletService
+
+@router.post("/notifications/send-user")
+def admin_send_user_notification(request: SendUserNotificationRequest, db: Session = Depends(get_db)):
+    success = send_push_to_user(db, request.user_id, request.title, request.body)
+    if not success:
+        raise HTTPException(status_code=400, detail="Failed to send notification. Verify user exists and has a token.")
+    return {"message": "Notification sent successfully."}
+
+@router.post("/notifications/send-all")
+def admin_send_all_notification(request: SendAllNotificationRequest, db: Session = Depends(get_db)):
+    sent_count = send_push_to_all(db, request.title, request.body)
+    return {"message": f"Notification broadcast sent to {sent_count} users."}
+
+@router.post("/contests/{id}/complete")
+def complete_contest(id: int, db: Session = Depends(get_db)):
+    contest = db.query(Contest).filter(Contest.id == id).first()
+    if not contest:
+        raise HTTPException(status_code=404, detail="Contest not found")
+        
+    if contest.status == "COMPLETED":
+        raise HTTPException(status_code=400, detail="Contest is already completed")
+        
+    contest.status = "COMPLETED"
+    db.commit()
+    
+    # Query participants ordered by rank (which was already calculated when they submitted scores)
+    participants = (
+        db.query(ContestParticipant)
+        .filter(ContestParticipant.contest_id == id)
+        .order_by(ContestParticipant.rank.asc())
+        .all()
+    )
+    
+    if not participants:
+        return {"message": "Contest completed with 0 participants.", "payouts": 0}
+        
+    # Standard rank-based prize pool distribution
+    # Rank 1: 50%, Rank 2: 30%, Rank 3: 20%
+    payout_pcts = {1: 0.50, 2: 0.30, 3: 0.20}
+    
+    # Adjust percentages if fewer than 3 participants
+    if len(participants) == 1:
+        payout_pcts = {1: 1.0}
+    elif len(participants) == 2:
+        payout_pcts = {1: 0.60, 2: 0.40}
+        
+    payouts_made = 0
+    for p in participants:
+        user = db.query(User).filter(User.id == p.user_id).first()
+        if not user:
+            continue
+            
+        if p.rank in payout_pcts:
+            payout_amount = contest.prize_pool * payout_pcts[p.rank]
+            # Credit prize triggers standard winning notification inside WalletService.credit_prize
+            WalletService.credit_prize(db, user, payout_amount)
+            payouts_made += 1
+        else:
+            # Send runner-up / completion notification to other participants
+            send_push_to_user(
+                db,
+                user.id,
+                title="🏁 Contest Finished!",
+                body=f"Contest '{contest.title}' is completed. You finished at Rank {p.rank}. Better luck next time!"
+            )
             
     db.commit()
-    db.refresh(tx)
-    return tx
+    return {"message": f"Contest completed. {payouts_made} winners paid out.", "payouts": payouts_made}

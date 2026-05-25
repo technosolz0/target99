@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:target99/core/theme/app_theme.dart';
 import 'package:target99/core/utils/dependency_injection.dart';
 import 'package:target99/core/network/api_client.dart';
@@ -10,12 +12,59 @@ import 'package:target99/features/wallet/wallet_screen.dart';
 import 'package:target99/features/referral/referral_screen.dart';
 import 'package:target99/features/profile/profile_screen.dart';
 
-void main() {
+final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
+    GlobalKey<ScaffoldMessengerState>();
+
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  // Initialize Firebase on background message to handle background payloads
+  await Firebase.initializeApp();
+}
+
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
+  // Initialize Firebase Core
+  await Firebase.initializeApp();
+
+  // Set background messaging handler
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
   // Set up dependency injection container
   setupDependencyInjection();
-  
+
+  // Listen for foreground push notifications
+  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+    final notification = message.notification;
+    if (notification != null) {
+      scaffoldMessengerKey.currentState?.showSnackBar(
+        SnackBar(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                notification.title ?? "Notification",
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                notification.body ?? "",
+                style: const TextStyle(color: Colors.white70),
+              ),
+            ],
+          ),
+          backgroundColor: AppTheme.accentCyan.withOpacity(0.95),
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    }
+  });
+
   runApp(const Target99App());
 }
 
@@ -28,6 +77,7 @@ class Target99App extends StatelessWidget {
       create: (context) => AppBloc(getIt<ApiClient>()),
       child: MaterialApp(
         title: 'target99',
+        scaffoldMessengerKey: scaffoldMessengerKey,
         debugShowCheckedModeBanner: false,
         theme: AppTheme.darkTheme,
         home: const AuthWrapper(),
@@ -74,15 +124,10 @@ class _MainNavigationLayoutState extends State<MainNavigationLayout> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
-      ),
+      body: IndexedStack(index: _currentIndex, children: _screens),
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
-          border: Border(
-            top: BorderSide(color: AppTheme.borderCol, width: 1),
-          ),
+          border: Border(top: BorderSide(color: AppTheme.borderCol, width: 1)),
         ),
         child: BottomNavigationBar(
           currentIndex: _currentIndex,
