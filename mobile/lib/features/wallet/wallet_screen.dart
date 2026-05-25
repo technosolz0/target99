@@ -1,0 +1,374 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:target99/core/theme/app_theme.dart';
+import 'package:target99/core/models/contest_model.dart';
+import 'package:target99/features/app_bloc.dart';
+
+class WalletScreen extends StatefulWidget {
+  const WalletScreen({super.key});
+
+  @override
+  State<WalletScreen> createState() => _WalletScreenState();
+}
+
+class _WalletScreenState extends State<WalletScreen> {
+  final _amountController = TextEditingController();
+  final _panController = TextEditingController();
+  
+  @override
+  void initState() {
+    super.initState();
+    context.read<AppBloc>().add(FetchTransactionsEvent());
+  }
+
+  @override
+  void dispose() {
+    _amountController.dispose();
+    _panController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<AppBloc, AppState>(
+      builder: (context, state) {
+        final user = state.currentUser;
+        
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('My Wallet'),
+            backgroundColor: AppTheme.darkBg,
+          ),
+          body: RefreshIndicator(
+            onRefresh: () async {
+              context.read<AppBloc>().add(FetchTransactionsEvent());
+              context.read<AppBloc>().add(LoadProfileEvent());
+            },
+            color: AppTheme.accentCyan,
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Net Balance Summary
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(20.0),
+                      child: Column(
+                        children: [
+                          const Text(
+                            'NET WALLET BALANCE',
+                            style: TextStyle(fontSize: 10, color: AppTheme.textMuted, fontWeight: FontWeight.bold, letterSpacing: 1),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '₹${user?.totalBalance.toStringAsFixed(2) ?? "0.00"}',
+                            style: TextStyle(fontSize: 32, fontWeight: FontWeight.w800, color: AppTheme.accentCyan),
+                          ),
+                          const SizedBox(height: 20),
+                          const Divider(color: AppTheme.borderCol, height: 1),
+                          const SizedBox(height: 16),
+                          
+                          // Three Wallets list
+                          _walletRow('Deposit Wallet', 'Added money for play', '₹${user?.depositBalance.toStringAsFixed(2) ?? "0.00"}', AppTheme.accentCyan),
+                          const SizedBox(height: 12),
+                          _walletRow('Winning Wallet', 'Prize money (Withdrawal ok)', '₹${user?.winningBalance.toStringAsFixed(2) ?? "0.00"}', AppTheme.accentEmerald),
+                          const SizedBox(height: 12),
+                          _walletRow('Bonus Wallet', 'Referral and cashbacks', '₹${user?.bonusBalance.toStringAsFixed(2) ?? "0.00"}', AppTheme.accentPurple),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Actions row (Add / Withdraw)
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () => _showDepositDialog(context),
+                          child: const Text('ADD MONEY'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () => _showWithdrawalDialog(context, user?.winningBalance ?? 0.0, user?.kycStatus ?? "PENDING"),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.cardBg,
+                            foregroundColor: Colors.white,
+                            side: const BorderSide(color: AppTheme.borderCol),
+                          ),
+                          child: const Text('WITHDRAW'),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 32),
+
+                  // Transaction History header
+                  const Row(
+                    children: [
+                      Icon(Icons.history, color: AppTheme.accentCyan, size: 18),
+                      SizedBox(width: 8),
+                      Text(
+                        'TRANSACTION HISTORY',
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Transactions list
+                  if (state.isWalletLoading && state.transactions.isEmpty)
+                    const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(32.0),
+                        child: CircularProgressIndicator(color: AppTheme.accentCyan),
+                      ),
+                    )
+                  else if (state.transactions.isEmpty)
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24.0),
+                        child: Text(
+                          'No transactions recorded yet.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: AppTheme.textMuted, fontStyle: FontStyle.italic),
+                        ),
+                      ),
+                    )
+                  else
+                    ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: state.transactions.length,
+                      itemBuilder: (context, index) {
+                        final tx = state.transactions[index];
+                        
+                        IconData iconData = Icons.payment;
+                        Color iconColor = AppTheme.accentCyan;
+                        String prefixSign = '';
+
+                        if (tx.type == 'DEPOSIT') {
+                          iconData = Icons.add_circle_outline;
+                          iconColor = AppTheme.accentEmerald;
+                          prefixSign = '+';
+                        } else if (tx.type == 'WITHDRAWAL') {
+                          iconData = Icons.remove_circle_outline;
+                          iconColor = AppTheme.accentRed;
+                          prefixSign = '-';
+                        } else if (tx.type == 'ENTRY_FEE') {
+                          iconData = Icons.sports_esports_outlined;
+                          iconColor = AppTheme.accentCyan;
+                          prefixSign = '-';
+                        } else if (tx.type == 'PRIZE_WIN') {
+                          iconData = Icons.emoji_events_outlined;
+                          iconColor = AppTheme.accentAmber;
+                          prefixSign = '+';
+                        } else if (tx.type == 'REFERRAL_BONUS') {
+                          iconData = Icons.card_giftcard_outlined;
+                          iconColor = AppTheme.accentPurple;
+                          prefixSign = '+';
+                        }
+
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 10),
+                          child: ListTile(
+                            leading: Icon(iconData, color: iconColor),
+                            title: Text(
+                              tx.type.replaceAll('_', ' '),
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                            ),
+                            subtitle: Text(
+                              '${tx.createdAt.day}/${tx.createdAt.month} • Status: ${tx.status}',
+                              style: TextStyle(fontSize: 10, color: AppTheme.textMuted),
+                            ),
+                            trailing: Text(
+                              '$prefixSign₹${tx.amount.toStringAsFixed(0)}',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                                color: prefixSign == '+' ? AppTheme.accentEmerald : Colors.white,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    )
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _walletRow(String title, String subtitle, String value, Color color) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+            Text(subtitle, style: TextStyle(fontSize: 9, color: AppTheme.textMuted)),
+          ],
+        ),
+        Text(
+          value,
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: color),
+        )
+      ],
+    );
+  }
+
+  void _showDepositDialog(BuildContext context) {
+    _amountController.clear();
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          backgroundColor: AppTheme.cardBg,
+          title: const Text('Add Money (Mock)'),
+          content: TextField(
+            controller: _amountController,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(
+              hintText: 'Enter amount (e.g. 500)',
+              prefixText: '₹ ',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('CANCEL'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final amt = double.tryParse(_amountController.text.trim());
+                if (amt != null && amt > 0) {
+                  Navigator.pop(ctx);
+                  context.read<AppBloc>().add(DepositMoneyEvent(amt));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Deposited ₹$amt successfully!'), backgroundColor: AppTheme.accentEmerald),
+                  );
+                }
+              },
+              child: const Text('DEPOSIT'),
+            )
+          ],
+        );
+      },
+    );
+  }
+
+  void _showWithdrawalDialog(BuildContext context, double winBalance, String kycStatus) {
+    _amountController.clear();
+    _panController.clear();
+    
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        bool showKycStep = kycStatus != "VERIFIED";
+        
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              backgroundColor: AppTheme.cardBg,
+              title: Text(showKycStep ? 'Legal KYC Verification' : 'Withdraw Winnings'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (showKycStep) ...[
+                    const Text(
+                      'Indian gaming laws require verification of a PAN card to process withdrawals.',
+                      style: TextStyle(fontSize: 11, color: AppTheme.textMuted),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _panController,
+                      textCapitalization: TextCapitalization.characters,
+                      decoration: const InputDecoration(
+                        hintText: 'Enter 10-character PAN number',
+                        labelText: 'PAN Card Number',
+                      ),
+                    ),
+                  ] else ...[
+                    Text(
+                      'Available Winning Balance: ₹${winBalance.toStringAsFixed(2)}',
+                      style: TextStyle(fontSize: 11, color: AppTheme.accentEmerald),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _amountController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        hintText: 'Enter amount to withdraw',
+                        prefixText: '₹ ',
+                      ),
+                    ),
+                  ]
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('CANCEL'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    if (showKycStep) {
+                      final pan = _panController.text.trim().toUpperCase();
+                      if (pan.length != 10) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Invalid PAN format (Must be 10 characters)'), backgroundColor: AppTheme.accentRed),
+                        );
+                        return;
+                      }
+                      // Move to amount step
+                      setDialogState(() {
+                        showKycStep = false;
+                      });
+                    } else {
+                      final amt = double.tryParse(_amountController.text.trim());
+                      if (amt == null || amt <= 0) return;
+                      if (amt > winBalance) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Withdrawal amount exceeds Winning Balance'), backgroundColor: AppTheme.accentRed),
+                        );
+                        return;
+                      }
+                      
+                      final pan = _panController.text.trim().toUpperCase();
+                      Navigator.pop(ctx);
+                      
+                      // Submit withdrawal request
+                      context.read<AppBloc>().add(
+                        WithdrawMoneyEvent(
+                          amt,
+                          pan.isNotEmpty ? pan : "ABCDE1234F", // fallback dummy PAN
+                        ),
+                      );
+                      
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Withdrawal request submitted! Pending Admin Approval.'),
+                          backgroundColor: AppTheme.accentCyan,
+                        ),
+                      );
+                    }
+                  },
+                  child: Text(showKycStep ? 'VERIFY PAN' : 'SUBMIT REQUEST'),
+                )
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+}

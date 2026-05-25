@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>target99 | Admin Control Center</title>
+    <!-- Google Fonts Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Main Style Sheet -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <span class="logo-accent">target</span>99
+                </div>
+                <div class="logo-sub">ADMIN PORTAL</div>
+            </div>
+            
+            <nav class="sidebar-menu">
+                <button class="menu-item active" data-tab="overview">
+                    <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+                    Overview
+                </button>
+                <button class="menu-item" data-tab="users">
+                    <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    User Management
+                </button>
+                <button class="menu-item" data-tab="contests">
+                    <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                    Contest Engine
+                </button>
+                <button class="menu-item" data-tab="withdrawals">
+                    <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                    Withdrawals
+                </button>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-profile">
+                    <div class="avatar">A</div>
+                    <div class="profile-info">
+                        <div class="name">Administrator</div>
+                        <div class="role">Platform Control</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Header bar -->
+            <header class="content-header">
+                <div class="title-section">
+                    <h1 id="page-title">Platform Overview</h1>
+                    <p id="page-subtitle" class="subtitle">Real-time statistics & business metrics</p>
+                </div>
+                <button class="btn btn-secondary btn-icon" id="btn-refresh">
+                    <svg class="btn-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                    Sync Data
+                </button>
+            </header>
+
+            <div class="scroll-container">
+                <!-- 1. OVERVIEW TAB -->
+                <section class="tab-panel active" id="panel-overview">
+                    <!-- KPI Cards Grid -->
+                    <div class="kpi-grid">
+                        <div class="kpi-card">
+                            <div class="kpi-icon-wrapper blue">
+                                <svg class="kpi-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                            </div>
+                            <div class="kpi-data">
+                                <span class="kpi-title">Total Users</span>
+                                <h3 class="kpi-value" id="stat-users">-</h3>
+                            </div>
+                        </div>
+
+                        <div class="kpi-card">
+                            <div class="kpi-icon-wrapper green">
+                                <svg class="kpi-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                            </div>
+                            <div class="kpi-data">
+                                <span class="kpi-title">Total Deposits</span>
+                                <h3 class="kpi-value" id="stat-deposits">₹0.00</h3>
+                            </div>
+                        </div>
+
+                        <div class="kpi-card">
+                            <div class="kpi-icon-wrapper purple">
+                                <svg class="kpi-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                            </div>
+                            <div class="kpi-data">
+                                <span class="kpi-title">Active Contests</span>
+                                <h3 class="kpi-value" id="stat-contests">-</h3>
+                            </div>
+                        </div>
+
+                        <div class="kpi-card">
+                            <div class="kpi-icon-wrapper orange">
+                                <svg class="kpi-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                            </div>
+                            <div class="kpi-data">
+                                <span class="kpi-title">Winnings Paid</span>
+                                <h3 class="kpi-value" id="stat-winnings">₹0.00</h3>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Revenue Card & Quick Actions -->
+                    <div class="dashboard-grid">
+                        <div class="card revenue-card">
+                            <div class="card-header">
+                                <h2>Platform Net Revenue</h2>
+                                <span class="badge badge-success">Live Margin</span>
+                            </div>
+                            <div class="revenue-display">
+                                <h1 class="revenue-value" id="stat-revenue">₹0.00</h1>
+                                <p class="revenue-description">Calculated as: Entry Fees Collected - Prize Winnings Paid. (Average margin 15–35%)</p>
+                            </div>
+                        </div>
+
+                        <div class="card quick-contest-card">
+                            <div class="card-header">
+                                <h2>Fast Contest Creator</h2>
+                            </div>
+                            <form id="quick-contest-form" class="contest-form">
+                                <div class="form-group">
+                                    <label for="c-title">Contest Title</label>
+                                    <input type="text" id="c-title" placeholder="e.g. ⚡ Fast Fire Trivia" required>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="c-fee">Entry Fee (₹)</label>
+                                        <input type="number" id="c-fee" value="30" min="1" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="c-slots">Total Slots</label>
+                                        <input type="number" id="c-slots" value="100" min="2" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="c-pool">Prize Pool (₹)</label>
+                                        <input type="number" id="c-pool" value="2500" min="1" required>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary btn-full">Launch Contest</button>
+                            </form>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 2. USERS TAB -->
+                <section class="tab-panel" id="panel-users">
+                    <div class="card table-card">
+                        <div class="card-table-header">
+                            <h2>Registered Accounts</h2>
+                            <div class="search-box">
+                                <input type="text" id="user-search" placeholder="Search by phone/name...">
+                            </div>
+                        </div>
+                        <div class="table-wrapper">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>User Details</th>
+                                        <th>Balances (Deposit / Winnings / Bonus)</th>
+                                        <th>KYC Status</th>
+                                        <th>Referrals</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="users-table-body">
+                                    <tr><td colspan="6" class="table-placeholder">Loading users data...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 3. CONTESTS TAB -->
+                <section class="tab-panel" id="panel-contests">
+                    <div class="card table-card">
+                        <div class="card-table-header">
+                            <h2>All Contest Lobbies</h2>
+                            <button class="btn btn-primary" id="btn-open-create-modal">
+                                <span>+</span> New Contest
+                            </button>
+                        </div>
+                        <div class="table-wrapper">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Contest Details</th>
+                                        <th>Entry Fee</th>
+                                        <th>Slots Filled</th>
+                                        <th>Prize Pool</th>
+                                        <th>Start Time</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="contests-table-body">
+                                    <tr><td colspan="7" class="table-placeholder">Loading contest lobbies...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 4. WITHDRAWALS TAB -->
+                <section class="tab-panel" id="panel-withdrawals">
+                    <div class="card table-card">
+                        <div class="card-table-header">
+                            <h2>Pending Withdrawal Approvals</h2>
+                        </div>
+                        <div class="table-wrapper">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Tx ID</th>
+                                        <th>User ID</th>
+                                        <th>Amount</th>
+                                        <th>Date Submitted</th>
+                                        <th>Status</th>
+                                        <th>Approvals</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="withdrawals-table-body">
+                                    <tr><td colspan="6" class="table-placeholder">Loading withdrawal requests...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast-notification"></div>
+    <script src="app.js"></script>
+</body>
+</html>

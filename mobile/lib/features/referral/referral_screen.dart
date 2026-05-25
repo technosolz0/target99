@@ -1,0 +1,239 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:target99/core/theme/app_theme.dart';
+import 'package:target99/features/app_bloc.dart';
+
+class ReferralScreen extends StatefulWidget {
+  const ReferralScreen({super.key});
+
+  @override
+  State<ReferralScreen> createState() => _ReferralScreenState();
+}
+
+class _ReferralScreenState extends State<ReferralScreen> {
+  @override
+  void initState() {
+    super.initState();
+    context.read<AppBloc>().add(FetchReferralDetailsEvent());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<AppBloc, AppState>(
+      builder: (context, state) {
+        final details = state.referralDetails;
+        
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('Refer & Earn'),
+            backgroundColor: AppTheme.darkBg,
+          ),
+          body: RefreshIndicator(
+            onRefresh: () async {
+              context.read<AppBloc>().add(FetchReferralDetailsEvent());
+            },
+            color: AppTheme.accentCyan,
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Banner card
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24.0),
+                      child: Column(
+                        children: [
+                          const Icon(
+                            Icons.card_giftcard,
+                            size: 56,
+                            color: AppTheme.accentPurple,
+                          ),
+                          const SizedBox(height: 12),
+                          const Text(
+                            'Invite Friends, Earn Cash!',
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 6),
+                          const Text(
+                            'Earn ₹50 Bonus Wallet Cash when your friend registers and plays their first contest. Your friend gets ₹20 too!',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(fontSize: 11, color: AppTheme.textMuted, height: 1.4),
+                          ),
+                          const SizedBox(height: 24),
+                          
+                          // Referral code wrapper
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.03),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: AppTheme.borderCol),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text('YOUR REFERRAL CODE', style: TextStyle(fontSize: 8, color: AppTheme.textMuted)),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      details?.referralCode ?? 'T99_XXXX',
+                                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 1),
+                                    ),
+                                  ],
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.copy, color: AppTheme.accentCyan),
+                                  onPressed: () {
+                                    if (details != null) {
+                                      Clipboard.setData(ClipboardData(text: details.referralCode));
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('Referral code copied to clipboard!'),
+                                          backgroundColor: AppTheme.accentCyan,
+                                        ),
+                                      );
+                                    }
+                                  },
+                                ),
+                              ],
+                            ),
+                          )
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Analytics Row
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Card(
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Column(
+                              children: [
+                                const Text('TOTAL INVITES', style: TextStyle(fontSize: 9, color: AppTheme.textMuted)),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '${details?.referralCount ?? 0}',
+                                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Card(
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Column(
+                              children: [
+                                const Text('TOTAL EARNED', style: TextStyle(fontSize: 9, color: AppTheme.textMuted)),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '₹${details?.bonusEarned.toStringAsFixed(0) ?? 0}',
+                                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppTheme.accentEmerald),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Invites log header
+                  const Row(
+                    children: [
+                      Icon(Icons.people_outline, color: AppTheme.accentCyan, size: 18),
+                      SizedBox(width: 8),
+                      Text(
+                        'SUCCESSFUL REFERRALS',
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Referral history items list
+                  if (state.isReferralLoading && (details == null || details.referrals.isEmpty))
+                    const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(32.0),
+                        child: CircularProgressIndicator(color: AppTheme.accentCyan),
+                      ),
+                    )
+                  else if (details == null || details.referrals.isEmpty)
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24.0),
+                        child: Text(
+                          'No referrals recorded yet.\nShare your code to start earning!',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: AppTheme.textMuted, fontStyle: FontStyle.italic),
+                        ),
+                      ),
+                    )
+                  else
+                    ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: details.referrals.length,
+                      itemBuilder: (context, index) {
+                        final item = details.referrals[index];
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 10),
+                          child: ListTile(
+                            leading: const CircleAvatar(
+                              backgroundColor: AppTheme.cardBg,
+                              child: Icon(Icons.person, color: AppTheme.textMuted),
+                            ),
+                            title: Text(item.referredUserName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                            subtitle: Text(
+                              'Referred on ${item.createdAt.day}/${item.createdAt.month}/${item.createdAt.year}',
+                              style: TextStyle(fontSize: 10, color: AppTheme.textMuted),
+                            ),
+                            trailing: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: item.bonusGiven
+                                    ? AppTheme.accentEmerald.withOpacity(0.1)
+                                    : Colors.white.withOpacity(0.03),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: item.bonusGiven
+                                      ? AppTheme.accentEmerald.withOpacity(0.3)
+                                      : AppTheme.borderCol,
+                                ),
+                              ),
+                              child: Text(
+                                item.bonusGiven ? 'Earned +₹50' : 'Pending play',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: item.bonusGiven ? AppTheme.accentEmerald : AppTheme.textMuted,
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}

@@ -1,0 +1,357 @@
+import 'dart:async';
+import 'dart:convert';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:target99/core/constants/api_constants.dart';
+import 'package:target99/core/models/contest_model.dart';
+import 'package:target99/core/models/user_model.dart';
+import 'package:target99/core/network/api_client.dart';
+
+// --- STATES ---
+class AppState {
+  // Auth
+  final bool isAuthLoading;
+  final UserModel? currentUser;
+  final String? token;
+  final String? authError;
+  final String? otpSentMessage;
+
+  // Contests
+  final bool isContestsLoading;
+  final List<ContestModel> contests;
+  final String? contestsError;
+
+  // Wallet & Transactions
+  final bool isWalletLoading;
+  final List<TransactionModel> transactions;
+  final String? walletError;
+
+  // Referral
+  final bool isReferralLoading;
+  final ReferralDetailsModel? referralDetails;
+  final String? referralError;
+
+  // Leaderboard
+  final List<LeaderboardItemModel> activeLeaderboard;
+  final bool isLeaderboardLoading;
+
+  AppState({
+    this.isAuthLoading = false,
+    this.currentUser,
+    this.token,
+    this.authError,
+    this.otpSentMessage,
+    this.isContestsLoading = false,
+    this.contests = const [],
+    this.contestsError,
+    this.isWalletLoading = false,
+    this.transactions = const [],
+    this.walletError,
+    this.isReferralLoading = false,
+    this.referralDetails,
+    this.referralError,
+    this.activeLeaderboard = const [],
+    this.isLeaderboardLoading = false,
+  });
+
+  AppState copyWith({
+    bool? isAuthLoading,
+    UserModel? currentUser,
+    String? token,
+    String? authError,
+    String? otpSentMessage,
+    bool? isContestsLoading,
+    List<ContestModel>? contests,
+    String? contestsError,
+    bool? isWalletLoading,
+    List<TransactionModel>? transactions,
+    String? walletError,
+    bool? isReferralLoading,
+    ReferralDetailsModel? referralDetails,
+    String? referralError,
+    List<LeaderboardItemModel>? activeLeaderboard,
+    bool? isLeaderboardLoading,
+  }) {
+    return AppState(
+      isAuthLoading: isAuthLoading ?? this.isAuthLoading,
+      currentUser: currentUser ?? this.currentUser,
+      token: token ?? this.token,
+      authError: authError ?? this.authError,
+      otpSentMessage: otpSentMessage ?? this.otpSentMessage,
+      isContestsLoading: isContestsLoading ?? this.isContestsLoading,
+      contests: contests ?? this.contests,
+      contestsError: contestsError ?? this.contestsError,
+      isWalletLoading: isWalletLoading ?? this.isWalletLoading,
+      transactions: transactions ?? this.transactions,
+      walletError: walletError ?? this.walletError,
+      isReferralLoading: isReferralLoading ?? this.isReferralLoading,
+      referralDetails: referralDetails ?? this.referralDetails,
+      referralError: referralError ?? this.referralError,
+      activeLeaderboard: activeLeaderboard ?? this.activeLeaderboard,
+      isLeaderboardLoading: isLeaderboardLoading ?? this.isLeaderboardLoading,
+    );
+  }
+}
+
+// --- EVENTS ---
+abstract class AppEvent {}
+
+class SendOtpEvent extends AppEvent {
+  final String phone;
+  SendOtpEvent(this.phone);
+}
+
+class VerifyOtpEvent extends AppEvent {
+  final String phone;
+  final String otp;
+  final String? referredBy;
+  VerifyOtpEvent(this.phone, this.otp, {this.referredBy});
+}
+
+class LoadProfileEvent extends AppEvent {}
+
+class FetchContestsEvent extends AppEvent {}
+
+class JoinContestEvent extends AppEvent {
+  final int contestId;
+  JoinContestEvent(this.contestId);
+}
+
+class SubmitScoreEvent extends AppEvent {
+  final int contestId;
+  final int score;
+  SubmitScoreEvent(this.contestId, this.score);
+}
+
+class FetchTransactionsEvent extends AppEvent {}
+
+class DepositMoneyEvent extends AppEvent {
+  final double amount;
+  DepositMoneyEvent(this.amount);
+}
+
+class WithdrawMoneyEvent extends AppEvent {
+  final double amount;
+  final String pan;
+  WithdrawMoneyEvent(this.amount, this.pan);
+}
+
+class FetchReferralDetailsEvent extends AppEvent {}
+
+class ConnectLeaderboardEvent extends AppEvent {
+  final int contestId;
+  ConnectLeaderboardEvent(this.contestId);
+}
+
+class UpdateLeaderboardDataEvent extends AppEvent {
+  final List<LeaderboardItemModel> items;
+  UpdateLeaderboardDataEvent(this.items);
+}
+
+class DisconnectLeaderboardEvent extends AppEvent {}
+
+class LogoutEvent extends AppEvent {}
+
+// --- AppBloc Implementation ---
+class AppBloc extends Bloc<AppEvent, AppState> {
+  final ApiClient _apiClient;
+  WebSocketChannel? _wsChannel;
+  StreamSubscription? _wsSubscription;
+
+  AppBloc(this._apiClient) : super(AppState()) {
+    on<SendOtpEvent>(_onSendOtp);
+    on<VerifyOtpEvent>(_onVerifyOtp);
+    on<LoadProfileEvent>(_onLoadProfile);
+    on<FetchContestsEvent>(_onFetchContests);
+    on<JoinContestEvent>(_onJoinContest);
+    on<SubmitScoreEvent>(_onSubmitScore);
+    on<FetchTransactionsEvent>(_onFetchTransactions);
+    on<DepositMoneyEvent>(_onDepositMoney);
+    on<WithdrawMoneyEvent>(_onWithdrawMoney);
+    on<FetchReferralDetailsEvent>(_onFetchReferralDetails);
+    on<ConnectLeaderboardEvent>(_onConnectLeaderboard);
+    on<UpdateLeaderboardDataEvent>(_onUpdateLeaderboardData);
+    on<DisconnectLeaderboardEvent>(_onDisconnectLeaderboard);
+    on<LogoutEvent>(_onLogout);
+  }
+
+  Future<void> _onSendOtp(SendOtpEvent event, Emitter<AppState> emit) async {
+    emit(state.copyWith(isAuthLoading: true, authError: null, otpSentMessage: null));
+    try {
+      final response = await _apiClient.post(ApiConstants.sendOtp, data: {'phone': event.phone});
+      emit(state.copyWith(
+        isAuthLoading: false,
+        otpSentMessage: response.data['message'] ?? 'OTP sent successfully',
+      ));
+    } catch (e) {
+      emit(state.copyWith(isAuthLoading: false, authError: e.toString().replaceAll('Exception: ', '')));
+    }
+  }
+
+  Future<void> _onVerifyOtp(VerifyOtpEvent event, Emitter<AppState> emit) async {
+    emit(state.copyWith(isAuthLoading: true, authError: null));
+    try {
+      final response = await _apiClient.post(ApiConstants.verifyOtp, data: {
+        'phone': event.phone,
+        'otp': event.otp,
+        'referred_by': event.referredBy?.isNotEmpty == true ? event.referredBy : null,
+      });
+      final token = response.data['access_token'] as String;
+      _apiClient.setToken(token);
+      emit(state.copyWith(token: token));
+      add(LoadProfileEvent());
+    } catch (e) {
+      emit(state.copyWith(isAuthLoading: false, authError: e.toString().replaceAll('Exception: ', '')));
+    }
+  }
+
+  Future<void> _onLoadProfile(LoadProfileEvent event, Emitter<AppState> emit) async {
+    emit(state.copyWith(isAuthLoading: true));
+    try {
+      final response = await _apiClient.get(ApiConstants.me);
+      final user = UserModel.fromJson(response.data);
+      emit(state.copyWith(isAuthLoading: false, currentUser: user));
+    } catch (e) {
+      emit(state.copyWith(isAuthLoading: false, authError: e.toString().replaceAll('Exception: ', '')));
+    }
+  }
+
+  Future<void> _onFetchContests(FetchContestsEvent event, Emitter<AppState> emit) async {
+    emit(state.copyWith(isContestsLoading: true, contestsError: null));
+    try {
+      final response = await _apiClient.get(ApiConstants.contests);
+      final contestsList = (response.data as List).map((json) => ContestModel.fromJson(json)).toList();
+      emit(state.copyWith(isContestsLoading: false, contests: contestsList));
+    } catch (e) {
+      emit(state.copyWith(isContestsLoading: false, contestsError: e.toString().replaceAll('Exception: ', '')));
+    }
+  }
+
+  Future<void> _onJoinContest(JoinContestEvent event, Emitter<AppState> emit) async {
+    emit(state.copyWith(isContestsLoading: true, contestsError: null));
+    try {
+      await _apiClient.post(ApiConstants.joinContest, data: {'contest_id': event.contestId});
+      // Refresh user profile for updated balances & refresh contests
+      add(LoadProfileEvent());
+      add(FetchContestsEvent());
+    } catch (e) {
+      emit(state.copyWith(isContestsLoading: false, contestsError: e.toString().replaceAll('Exception: ', '')));
+    }
+  }
+
+  Future<void> _onSubmitScore(SubmitScoreEvent event, Emitter<AppState> emit) async {
+    try {
+      await _apiClient.post(ApiConstants.submitScore, data: {
+        'contest_id': event.contestId,
+        'score': event.score,
+      });
+      add(FetchContestsEvent());
+    } catch (e) {
+      emit(state.copyWith(contestsError: e.toString().replaceAll('Exception: ', '')));
+    }
+  }
+
+  Future<void> _onFetchTransactions(FetchTransactionsEvent event, Emitter<AppState> emit) async {
+    emit(state.copyWith(isWalletLoading: true, walletError: null));
+    try {
+      final response = await _apiClient.get(ApiConstants.transactions);
+      final list = (response.data as List).map((json) => TransactionModel.fromJson(json)).toList();
+      emit(state.copyWith(isWalletLoading: false, transactions: list));
+    } catch (e) {
+      emit(state.copyWith(isWalletLoading: false, walletError: e.toString().replaceAll('Exception: ', '')));
+    }
+  }
+
+  Future<void> _onDepositMoney(DepositMoneyEvent event, Emitter<AppState> emit) async {
+    emit(state.copyWith(isWalletLoading: true, walletError: null));
+    try {
+      await _apiClient.post(ApiConstants.deposit, data: {'amount': event.amount});
+      add(LoadProfileEvent());
+      add(FetchTransactionsEvent());
+    } catch (e) {
+      emit(state.copyWith(isWalletLoading: false, walletError: e.toString().replaceAll('Exception: ', '')));
+    }
+  }
+
+  Future<void> _onWithdrawMoney(WithdrawMoneyEvent event, Emitter<AppState> emit) async {
+    emit(state.copyWith(isWalletLoading: true, walletError: null));
+    try {
+      await _apiClient.post(ApiConstants.withdraw, data: {
+        'amount': event.amount,
+        'pan': event.pan,
+      });
+      add(LoadProfileEvent());
+      add(FetchTransactionsEvent());
+    } catch (e) {
+      emit(state.copyWith(isWalletLoading: false, walletError: e.toString().replaceAll('Exception: ', '')));
+    }
+  }
+
+  Future<void> _onFetchReferralDetails(FetchReferralDetailsEvent event, Emitter<AppState> emit) async {
+    emit(state.copyWith(isReferralLoading: true, referralError: null));
+    try {
+      final response = await _apiClient.get(ApiConstants.referralDetails);
+      final details = ReferralDetailsModel.fromJson(response.data);
+      emit(state.copyWith(isReferralLoading: false, referralDetails: details));
+    } catch (e) {
+      emit(state.copyWith(isReferralLoading: false, referralError: e.toString().replaceAll('Exception: ', '')));
+    }
+  }
+
+  Future<void> _onConnectLeaderboard(ConnectLeaderboardEvent event, Emitter<AppState> emit) async {
+    emit(state.copyWith(isLeaderboardLoading: true, activeLeaderboard: []));
+    await _onDisconnectLeaderboard(DisconnectLeaderboardEvent(), emit);
+    
+    try {
+      // 1. Fetch initial HTTP leaderboard
+      final response = await _apiClient.get(ApiConstants.leaderboard(event.contestId));
+      final items = (response.data as List).map((json) => LeaderboardItemModel.fromJson(json)).toList();
+      emit(state.copyWith(isLeaderboardLoading: false, activeLeaderboard: items));
+      
+      // 2. Open WebSocket Channel
+      final uri = Uri.parse('${ApiConstants.wsUrl}/${event.contestId}');
+      _wsChannel = WebSocketChannel.connect(uri);
+      
+      _wsSubscription = _wsChannel!.stream.listen((message) {
+        try {
+          final payload = jsonDecode(message);
+          if (payload['type'] == 'leaderboard_update') {
+            final dataList = payload['data'] as List;
+            final updatedItems = dataList.map((json) => LeaderboardItemModel.fromJson(json)).toList();
+            add(UpdateLeaderboardDataEvent(updatedItems));
+          }
+        } catch (_) {}
+      }, onError: (_) {
+        add(DisconnectLeaderboardEvent());
+      }, onDone: () {
+        add(DisconnectLeaderboardEvent());
+      });
+    } catch (_) {
+      emit(state.copyWith(isLeaderboardLoading: false));
+    }
+  }
+
+  void _onUpdateLeaderboardData(UpdateLeaderboardDataEvent event, Emitter<AppState> emit) {
+    emit(state.copyWith(activeLeaderboard: event.items));
+  }
+
+  Future<void> _onDisconnectLeaderboard(DisconnectLeaderboardEvent event, Emitter<AppState> emit) async {
+    await _wsSubscription?.cancel();
+    _wsSubscription = null;
+    await _wsChannel?.sink.close();
+    _wsChannel = null;
+    emit(state.copyWith(activeLeaderboard: []));
+  }
+
+  void _onLogout(LogoutEvent event, Emitter<AppState> emit) {
+    _apiClient.setToken(null);
+    emit(AppState());
+  }
+
+  @override
+  Future<void> close() {
+    _wsSubscription?.cancel();
+    _wsChannel?.sink.close();
+    return super.close();
+  }
+}
