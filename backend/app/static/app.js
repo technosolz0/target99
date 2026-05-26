@@ -113,6 +113,14 @@ function updateHeaders(tab) {
             el.pageTitle.innerText = "Notification Center";
             el.pageSubtitle.innerText = "Send custom Firebase push messages directly to client devices";
             break;
+        case 'quiz-manager':
+            el.pageTitle.innerText = "Quiz Manager";
+            el.pageSubtitle.innerText = "Manage questions and options for each contest";
+            break;
+        case 'wallet-manager':
+            el.pageTitle.innerText = "Wallet Manager";
+            el.pageSubtitle.innerText = "Directly adjust deposit, winning, or bonus balances for any user account";
+            break;
     }
 }
 
@@ -529,6 +537,12 @@ function loadTabSpecificData(tab) {
         case 'withdrawals':
             loadWithdrawals();
             break;
+        case 'quiz-manager':
+            loadQuizManagerContests();
+            break;
+        case 'wallet-manager':
+            loadWalletManagerUsers();
+            break;
     }
 }
 
@@ -658,8 +672,43 @@ function renderContestsTable(contestsList) {
             rulesHtml = `<span style="font-size: 11px; color: var(--text-muted); font-style: italic; margin-top: 5px; display: block;">Standard distribution</span>`;
         }
 
-        const questionsCount = c.questions ? c.questions.length : 0;
-        const questionsHtml = `<div style="font-size: 11px; color: var(--text-muted); margin-top: 3px;">📋 ${questionsCount} Questions</div>`;
+        let questions = c.questions;
+        if (typeof questions === 'string') {
+            try {
+                questions = JSON.parse(questions);
+            } catch (e) {
+                questions = [];
+            }
+        }
+        const questionsCount = questions ? questions.length : 0;
+        let questionsHtml = '';
+        if (questionsCount > 0) {
+            const qListHtml = questions.map((q, qIdx) => {
+                const optionsHtml = q.options.map((opt, oIdx) => {
+                    const isCorrect = oIdx === q.correct_answer_index;
+                    return `<li style="color: ${isCorrect ? 'var(--success)' : 'var(--text-muted)'}; font-weight: ${isCorrect ? '600' : 'normal'}; margin-left: 12px; list-style-type: lower-alpha;">${opt} ${isCorrect ? '✓' : ''}</li>`;
+                }).join('');
+                return `
+                    <div style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed rgba(255,255,255,0.05);">
+                        <strong style="color: var(--text-main); display: block; margin-bottom: 2px;">Q${qIdx + 1}: ${q.text}</strong>
+                        <ol style="margin: 0; padding: 0;">${optionsHtml}</ol>
+                    </div>
+                `;
+            }).join('');
+
+            questionsHtml = `
+                <div style="margin-top: 4px;">
+                    <button class="btn btn-action" id="toggle-qs-btn-${c.id}" onclick="toggleQuestions(${c.id})" style="padding: 2px 6px; font-size: 10px; background: rgba(255,255,255,0.05); color: var(--text-muted); border: 1px solid var(--border-color);">
+                        Show ${questionsCount} Questions
+                    </button>
+                    <div id="qs-list-${c.id}" data-count="${questionsCount}" style="display: none; margin-top: 8px; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 6px; border: 1px solid var(--border-color); max-width: 320px; text-align: left;">
+                        ${qListHtml}
+                    </div>
+                </div>
+            `;
+        } else {
+            questionsHtml = `<div style="font-size: 11px; color: var(--text-muted); margin-top: 3px; font-style: italic;">📋 No questions added</div>`;
+        }
 
         return `
             <tr>
@@ -767,9 +816,23 @@ function renderTransactionHistoryTable(txList) {
         if (tx.status === 'SUCCESS') statusBadge = 'badge-success';
         if (tx.status === 'FAILED') statusBadge = 'badge-error';
 
-        const typeBadge = tx.type === 'DEPOSIT' ? 'badge-success' : 'badge-error';
-        const typeStyle = tx.type === 'DEPOSIT' ? 'color: var(--success)' : 'color: var(--error)';
-        const prefix = tx.type === 'DEPOSIT' ? '+' : '-';
+        let typeBadge = 'badge-warning';
+        let typeStyle = 'color: var(--warning)';
+        let prefix = '-';
+
+        if (tx.type === 'DEPOSIT' || tx.type === 'PRIZE_WIN' || tx.type === 'REFERRAL_BONUS') {
+            typeBadge = 'badge-success';
+            typeStyle = 'color: var(--success)';
+            prefix = '+';
+        } else if (tx.type === 'WITHDRAWAL') {
+            typeBadge = 'badge-error';
+            typeStyle = 'color: var(--error)';
+            prefix = '-';
+        } else if (tx.type === 'ENTRY_FEE') {
+            typeBadge = 'badge-warning';
+            typeStyle = 'color: var(--warning)';
+            prefix = '-';
+        }
 
         return `
             <tr>
@@ -820,4 +883,263 @@ window.openAdjustBalanceModal = function (userId, name, phone) {
     document.getElementById('adj-wallet-type').value = 'deposit';
     document.getElementById('adjust-balance-modal').classList.add('show');
 }
+
+window.toggleQuestions = function (contestId) {
+    const listEl = document.getElementById(`qs-list-${contestId}`);
+    const btnEl = document.getElementById(`toggle-qs-btn-${contestId}`);
+    if (listEl && btnEl) {
+        if (listEl.style.display === 'none') {
+            listEl.style.display = 'block';
+            btnEl.innerText = 'Hide Questions';
+        } else {
+            listEl.style.display = 'none';
+            const count = listEl.dataset.count || 'Questions';
+            btnEl.innerText = `Show ${count} Questions`;
+        }
+    }
+}
+
+// Quiz Manager Actions and Helpers
+async function loadQuizManagerContests() {
+    try {
+        const res = await fetch(`${API_BASE}/contests`);
+        if (!res.ok) throw new Error("Failed to load contests.");
+        const contests = await res.json();
+
+        const select = document.getElementById('qm-contest-select');
+        select.innerHTML = '<option value="">-- Choose a Contest --</option>' +
+            contests.map(c => `<option value="${c.id}">${c.title} (ID: ${c.id})</option>`).join('');
+
+        // Reset view
+        document.getElementById('qm-questions-section').style.display = 'none';
+        document.getElementById('qm-questions-list').innerHTML = '';
+
+        // Save current contests in memory
+        state.contests = contests;
+    } catch (err) {
+        showToast(err.message, true);
+    }
+}
+
+function addQMQuestionRow(text = '', options = ['', '', '', ''], correctIndex = 0) {
+    const listContainer = document.getElementById('qm-questions-list');
+    const card = document.createElement('div');
+    card.className = 'quiz-question-card';
+    card.innerHTML = `
+        <div class="question-header">
+            <input type="text" placeholder="Question Text" class="q-text" value="${text.replace(/"/g, '&quot;')}" required style="width: 100%;">
+            <button type="button" class="btn-remove-rule btn-remove-question" title="Remove Question" style="margin-left: 10px;">&times;</button>
+        </div>
+        <div class="question-options-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
+            <input type="text" placeholder="Option A" class="q-opt-0" value="${options[0].replace(/"/g, '&quot;')}" required>
+            <input type="text" placeholder="Option B" class="q-opt-1" value="${options[1].replace(/"/g, '&quot;')}" required>
+            <input type="text" placeholder="Option C" class="q-opt-2" value="${options[2].replace(/"/g, '&quot;')}" required>
+            <input type="text" placeholder="Option D" class="q-opt-3" value="${options[3].replace(/"/g, '&quot;')}" required>
+        </div>
+        <div class="question-footer" style="margin-top: 10px; display: flex; align-items: center; gap: 10px;">
+            <span style="font-size:12px; color:var(--text-muted);">Correct Answer:</span>
+            <select class="q-correct" style="background: #1e293b; color: #fff; border: 1px solid #334155; padding: 6px 12px; border-radius: 6px; font-family: inherit;">
+                <option value="0" ${correctIndex === 0 ? 'selected' : ''}>Option A</option>
+                <option value="1" ${correctIndex === 1 ? 'selected' : ''}>Option B</option>
+                <option value="2" ${correctIndex === 2 ? 'selected' : ''}>Option C</option>
+                <option value="3" ${correctIndex === 3 ? 'selected' : ''}>Option D</option>
+            </select>
+        </div>
+    `;
+
+    card.querySelector('.btn-remove-question').addEventListener('click', () => {
+        card.remove();
+    });
+
+    listContainer.appendChild(card);
+}
+
+// Setup Event Listeners for Quiz Manager elements
+document.addEventListener('DOMContentLoaded', () => {
+    const qmSelect = document.getElementById('qm-contest-select');
+    if (qmSelect) {
+        qmSelect.addEventListener('change', (e) => {
+            const contestId = parseInt(e.target.value);
+            if (isNaN(contestId)) {
+                document.getElementById('qm-questions-section').style.display = 'none';
+                return;
+            }
+
+            const contest = state.contests.find(c => c.id === contestId);
+            if (!contest) return;
+
+            document.getElementById('qm-questions-section').style.display = 'block';
+            const listContainer = document.getElementById('qm-questions-list');
+            listContainer.innerHTML = '';
+
+            let questions = contest.questions;
+            if (typeof questions === 'string') {
+                try {
+                    questions = JSON.parse(questions);
+                } catch (e) {
+                    questions = [];
+                }
+            }
+
+            if (questions && questions.length > 0) {
+                questions.forEach(q => addQMQuestionRow(q.text, q.options, q.correct_answer_index));
+            } else {
+                addQMQuestionRow('', ['', '', '', ''], 0);
+            }
+        });
+    }
+
+    const btnQMAddQuestion = document.getElementById('btn-qm-add-question');
+    if (btnQMAddQuestion) {
+        btnQMAddQuestion.addEventListener('click', () => {
+            addQMQuestionRow('', ['', '', '', ''], 0);
+        });
+    }
+
+    const btnQMSaveQuestions = document.getElementById('btn-qm-save-questions');
+    if (btnQMSaveQuestions) {
+        btnQMSaveQuestions.addEventListener('click', async () => {
+            const contestId = parseInt(document.getElementById('qm-contest-select').value);
+            if (isNaN(contestId)) return;
+
+            const qCards = document.getElementById('qm-questions-list').querySelectorAll('.quiz-question-card');
+            const questions = [];
+
+            for (const card of qCards) {
+                const text = card.querySelector('.q-text').value.trim();
+                const opt0 = card.querySelector('.q-opt-0').value.trim();
+                const opt1 = card.querySelector('.q-opt-1').value.trim();
+                const opt2 = card.querySelector('.q-opt-2').value.trim();
+                const opt3 = card.querySelector('.q-opt-3').value.trim();
+                const correctAnswerIndex = parseInt(card.querySelector('.q-correct').value);
+
+                if (!text || !opt0 || !opt1 || !opt2 || !opt3 || isNaN(correctAnswerIndex)) {
+                    showToast("Please fill all fields for all questions.", true);
+                    return;
+                }
+
+                questions.push({
+                    text: text,
+                    options: [opt0, opt1, opt2, opt3],
+                    correct_answer_index: correctAnswerIndex
+                });
+            }
+
+            btnQMSaveQuestions.disabled = true;
+            btnQMSaveQuestions.innerText = "Saving...";
+
+            try {
+                const response = await fetch(`${API_BASE}/admin/contests/${contestId}/questions`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(questions)
+                });
+
+                if (!response.ok) throw new Error(await response.text());
+
+                showToast("Contest questions updated successfully!");
+                loadQuizManagerContests().then(() => {
+                    document.getElementById('qm-contest-select').value = contestId;
+                    document.getElementById('qm-contest-select').dispatchEvent(new Event('change'));
+                });
+            } catch (err) {
+                console.error(err);
+                showToast("Failed to save questions: " + err.message, true);
+            } finally {
+                btnQMSaveQuestions.disabled = false;
+                btnQMSaveQuestions.innerText = "Save All Questions";
+            }
+        });
+    }
+});
+
+// Wallet Manager Actions and Helpers
+async function loadWalletManagerUsers() {
+    try {
+        const res = await fetch(`${API_BASE}/admin/users`);
+        if (!res.ok) throw new Error("Failed to load users list.");
+        const users = await res.json();
+
+        const select = document.getElementById('wm-user-select');
+        select.innerHTML = '<option value="">-- Choose User --</option>' +
+            users.map(u => `<option value="${u.id}">${u.name || 'Anonymous'} (${u.phone}) - ID: ${u.id}</option>`).join('');
+
+        // Reset view
+        document.getElementById('wm-user-balances').style.display = 'none';
+        document.getElementById('wm-amount').value = '';
+
+        // Save current users in memory
+        state.users = users;
+    } catch (err) {
+        showToast(err.message, true);
+    }
+}
+
+// Setup Event Listeners for Wallet Manager elements
+document.addEventListener('DOMContentLoaded', () => {
+    const wmUserSelect = document.getElementById('wm-user-select');
+    if (wmUserSelect) {
+        wmUserSelect.addEventListener('change', (e) => {
+            const userId = parseInt(e.target.value);
+            if (isNaN(userId)) {
+                document.getElementById('wm-user-balances').style.display = 'none';
+                return;
+            }
+
+            const user = state.users.find(u => u.id === userId);
+            if (!user) return;
+
+            document.getElementById('wm-user-balances').style.display = 'block';
+            document.getElementById('wm-val-dep').innerText = `₹${user.deposit_balance.toFixed(2)}`;
+            document.getElementById('wm-val-win').innerText = `₹${user.winning_balance.toFixed(2)}`;
+            document.getElementById('wm-val-bon').innerText = `₹${user.bonus_balance.toFixed(2)}`;
+        });
+    }
+
+    const wmAdjustForm = document.getElementById('wm-adjust-balance-form');
+    if (wmAdjustForm) {
+        wmAdjustForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const userId = parseInt(document.getElementById('wm-user-select').value);
+            const walletType = document.getElementById('wm-wallet-type').value;
+            const amount = parseFloat(document.getElementById('wm-amount').value);
+
+            if (isNaN(userId) || isNaN(amount)) {
+                showToast("Please select a user and enter a valid amount.", true);
+                return;
+            }
+
+            const btnSubmit = wmAdjustForm.querySelector('button[type="submit"]');
+            btnSubmit.disabled = true;
+            btnSubmit.innerText = "Updating...";
+
+            try {
+                const response = await fetch(`${API_BASE}/admin/users/${userId}/adjust-balance`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        amount: amount,
+                        wallet_type: walletType
+                    })
+                });
+
+                if (!response.ok) throw new Error(await response.text());
+
+                showToast(`Successfully adjusted ${walletType} balance by ₹${amount.toFixed(2)}!`);
+                loadWalletManagerUsers().then(() => {
+                    document.getElementById('wm-user-select').value = userId;
+                    document.getElementById('wm-user-select').dispatchEvent(new Event('change'));
+                });
+            } catch (err) {
+                console.error(err);
+                showToast("Failed to adjust balance: " + err.message, true);
+            } finally {
+                btnSubmit.disabled = false;
+                btnSubmit.innerText = "Submit Balance Update";
+            }
+        });
+    }
+});
+
+
 

@@ -7,7 +7,7 @@ from app.core.database import get_db
 from app.models import User, Contest, WalletTransaction
 from app.schemas import (
     AdminStatsResponse, UserResponse, ContestCreate, ContestResponse, TransactionResponse,
-    AdminAdjustBalanceRequest
+    AdminAdjustBalanceRequest, QuestionSchema
 )
 from app.core.config import settings
 
@@ -150,7 +150,6 @@ def get_withdrawals(db: Session = Depends(get_db)):
 def get_transactions(db: Session = Depends(get_db)):
     return (
         db.query(WalletTransaction)
-        .filter(WalletTransaction.type.in_(["DEPOSIT", "WITHDRAWAL"]))
         .order_by(WalletTransaction.created_at.desc())
         .all()
     )
@@ -291,3 +290,15 @@ def complete_contest(id: int, db: Session = Depends(get_db)):
             
     db.commit()
     return {"message": f"Contest completed. {payouts_made} winners paid out.", "payouts": payouts_made}
+
+@router.post("/contests/{id}/questions", response_model=ContestResponse)
+def update_contest_questions(id: int, questions: List[QuestionSchema], db: Session = Depends(get_db)):
+    contest = db.query(Contest).filter(Contest.id == id).first()
+    if not contest:
+        raise HTTPException(status_code=404, detail="Contest not found")
+        
+    import json
+    contest.questions = json.dumps([q.model_dump() for q in questions])
+    db.commit()
+    db.refresh(contest)
+    return contest
