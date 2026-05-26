@@ -17,6 +17,7 @@ class AppState {
   final String? token;
   final String? authError;
   final String? otpSentMessage;
+  final bool showRegistrationFields;
 
   // Contests
   final bool isContestsLoading;
@@ -43,6 +44,7 @@ class AppState {
     this.token,
     this.authError,
     this.otpSentMessage,
+    this.showRegistrationFields = false,
     this.isContestsLoading = false,
     this.contests = const [],
     this.contestsError,
@@ -62,6 +64,7 @@ class AppState {
     String? token,
     String? authError,
     String? otpSentMessage,
+    bool? showRegistrationFields,
     bool? isContestsLoading,
     List<ContestModel>? contests,
     String? contestsError,
@@ -80,6 +83,7 @@ class AppState {
       token: token ?? this.token,
       authError: authError ?? this.authError,
       otpSentMessage: otpSentMessage ?? this.otpSentMessage,
+      showRegistrationFields: showRegistrationFields ?? this.showRegistrationFields,
       isContestsLoading: isContestsLoading ?? this.isContestsLoading,
       contests: contests ?? this.contests,
       contestsError: contestsError ?? this.contestsError,
@@ -109,7 +113,9 @@ class VerifyOtpEvent extends AppEvent {
   final String phone;
   final String otp;
   final String? referredBy;
-  VerifyOtpEvent(this.phone, this.otp, {this.referredBy});
+  final String? firstName;
+  final String? lastName;
+  VerifyOtpEvent(this.phone, this.otp, {this.referredBy, this.firstName, this.lastName});
 }
 
 class VerifyPhoneCredentialEvent extends AppEvent {
@@ -185,6 +191,7 @@ class AppBloc extends Bloc<AppEvent, AppState> {
   WebSocketChannel? _wsChannel;
   StreamSubscription? _wsSubscription;
   String? _verificationId;
+  PhoneAuthCredential? _pendingCredential;
 
   AppBloc(this._apiClient) : super(AppState()) {
     on<AppStartedEvent>(_onAppStarted);
@@ -213,12 +220,25 @@ class AppBloc extends Bloc<AppEvent, AppState> {
         isAuthLoading: true,
         authError: null,
         otpSentMessage: null,
+        showRegistrationFields: false,
       ),
     );
 
     String formattedPhone = event.phone.trim();
     if (!formattedPhone.startsWith('+')) {
       formattedPhone = '+91$formattedPhone';
+    }
+
+    _pendingCredential = null; // Reset pending credentials
+
+    // Dynamically check if the phone is already registered
+    bool showRegistration = false;
+    try {
+      final checkResponse = await _apiClient.get('/auth/check-phone/$formattedPhone');
+      final exists = checkResponse.data['exists'] as bool;
+      showRegistration = !exists;
+    } catch (e) {
+      print("Check phone failed, assuming login: $e");
     }
 
     // Developer/grading mock bypass active for numbers ending with '00'
@@ -229,6 +249,7 @@ class AppBloc extends Bloc<AppEvent, AppState> {
           isAuthLoading: false,
           otpSentMessage:
               'OTP sent successfully (Dev Mock Bypass Active, use OTP 999999)',
+          showRegistrationFields: showRegistration,
         ),
       );
       return;
@@ -242,7 +263,19 @@ class AppBloc extends Bloc<AppEvent, AppState> {
         verificationCompleted: (PhoneAuthCredential credential) {
           print("Phone verification completed automatically: $credential");
           if (!completer.isCompleted) {
-            add(VerifyPhoneCredentialEvent(credential));
+            if (showRegistration) {
+              _pendingCredential = credential;
+              emit(
+                state.copyWith(
+                  isAuthLoading: false,
+                  otpSentMessage:
+                      'Phone verified automatically. Enter your name to register.',
+                  showRegistrationFields: true,
+                ),
+              );
+            } else {
+              add(VerifyPhoneCredentialEvent(credential));
+            }
             completer.complete();
           }
         },
@@ -264,6 +297,7 @@ class AppBloc extends Bloc<AppEvent, AppState> {
               state.copyWith(
                 isAuthLoading: false,
                 otpSentMessage: 'OTP sent successfully to $formattedPhone',
+                showRegistrationFields: showRegistration,
               ),
             );
             completer.complete();
@@ -352,8 +386,17 @@ class AppBloc extends Bloc<AppEvent, AppState> {
 
       String idToken;
 
-      // Developer bypass / grading convenience check
-      if (event.otp == '999999' || formattedPhone.endsWith('00')) {
+      if (_pendingCredential != null) {
+        final userCredential = await FirebaseAuth.instance.signInWithCredential(
+          _pendingCredential!,
+        );
+        final user = userCredential.user;
+        if (user == null) {
+          throw Exception("Firebase user is null after authentication.");
+        }
+        idToken = await user.getIdToken() ?? '';
+        _pendingCredential = null;
+      } else if (event.otp == '999999' || formattedPhone.endsWith('00')) {
         idToken = 'mock_token_$formattedPhone';
       } else {
         if (_verificationId == null) {
@@ -387,6 +430,12 @@ class AppBloc extends Bloc<AppEvent, AppState> {
           'id_token': idToken,
           'referred_by': event.referredBy?.isNotEmpty == true
               ? event.referredBy
+              : null,
+          'first_name': event.firstName?.isNotEmpty == true
+              ? event.firstName
+              : null,
+          'last_name': event.lastName?.isNotEmpty == true
+              ? event.lastName
               : null,
         },
       );

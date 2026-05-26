@@ -38,6 +38,19 @@ def send_otp(request: SendOTPRequest):
         "otp_debug": otp  # Returning OTP for ease of testing on frontend
     }
 
+@router.get("/check-phone/{phone}")
+def check_phone(phone: str, db: Session = Depends(get_db)):
+    phone_clean = phone.strip()
+    phones_to_check = [phone_clean]
+    if not phone_clean.startswith('+'):
+        phones_to_check.append(f"+91{phone_clean}")
+    else:
+        if phone_clean.startswith('+91') and len(phone_clean) == 13:
+            phones_to_check.append(phone_clean[3:])
+            
+    user = db.query(User).filter(User.phone.in_(phones_to_check)).first()
+    return {"exists": user is not None}
+
 @router.post("/verify-otp", response_model=Token)
 def verify_otp(request: VerifyOTPRequest, db: Session = Depends(get_db)):
     id_token = request.id_token.strip()
@@ -78,8 +91,15 @@ def verify_otp(request: VerifyOTPRequest, db: Session = Depends(get_db)):
             if not referrer:
                 referred_by_code = None # Ignore invalid referral codes silently
         
+        first_name = request.first_name.strip() if request.first_name else None
+        last_name = request.last_name.strip() if request.last_name else None
+        full_name = f"{first_name or ''} {last_name or ''}".strip() or None
+
         user = User(
             phone=phone,
+            first_name=first_name,
+            last_name=last_name,
+            name=full_name,
             referral_code=ref_code,
             referred_by=referred_by_code,
             deposit_balance=0.0,

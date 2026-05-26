@@ -17,10 +17,14 @@ class SendOTPRequest(BaseModel):
 class VerifyOTPRequest(BaseModel):
     id_token: str
     referred_by: Optional[str] = None  # Optional referral code during registration
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
 
 class UserResponse(BaseModel):
     id: int
     name: Optional[str] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
     phone: str
     email: Optional[str] = None
     referral_code: str

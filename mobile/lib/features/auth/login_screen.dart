@@ -15,6 +15,8 @@ class _LoginScreenState extends State<LoginScreen> {
   final _phoneController = TextEditingController();
   final _otpController = TextEditingController();
   final _referralController = TextEditingController();
+  final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
 
   bool _otpSent = false;
 
@@ -29,6 +31,8 @@ class _LoginScreenState extends State<LoginScreen> {
     _phoneController.dispose();
     _otpController.dispose();
     _referralController.dispose();
+    _firstNameController.dispose();
+    _lastNameController.dispose();
     super.dispose();
   }
 
@@ -190,6 +194,44 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                               ),
                               const SizedBox(height: 16),
+                              BlocBuilder<AppBloc, AppState>(
+                                builder: (context, state) {
+                                  if (state.showRegistrationFields) {
+                                    return Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        TextField(
+                                          controller: _firstNameController,
+                                          textCapitalization: TextCapitalization.words,
+                                          decoration: const InputDecoration(
+                                            labelText: 'First Name',
+                                            hintText: 'Enter your first name',
+                                            prefixIcon: Icon(
+                                              Icons.person_outline,
+                                              color: AppTheme.textMuted,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 16),
+                                        TextField(
+                                          controller: _lastNameController,
+                                          textCapitalization: TextCapitalization.words,
+                                          decoration: const InputDecoration(
+                                            labelText: 'Last Name',
+                                            hintText: 'Enter your last name',
+                                            prefixIcon: Icon(
+                                              Icons.person_outline,
+                                              color: AppTheme.textMuted,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 16),
+                                      ],
+                                    );
+                                  }
+                                  return const SizedBox.shrink();
+                                },
+                              ),
                             ],
 
                             // Referral input (optional during registration)
@@ -234,17 +276,39 @@ class _LoginScreenState extends State<LoginScreen> {
                                       );
                                     } else {
                                       final otp = _otpController.text.trim();
-                                      final ref = _referralController.text
-                                          .trim();
-                                      context.read<AppBloc>().add(
-                                        VerifyOtpEvent(
-                                          phone,
-                                          otp,
-                                          referredBy: ref.isNotEmpty
-                                              ? ref
-                                              : null,
-                                        ),
-                                      );
+                                      final ref = _referralController.text.trim();
+
+                                      if (state.showRegistrationFields) {
+                                        final firstName = _firstNameController.text.trim();
+                                        final lastName = _lastNameController.text.trim();
+                                        if (firstName.isEmpty || lastName.isEmpty) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(
+                                              content: Text('Please enter both your first and last name to register.'),
+                                              backgroundColor: AppTheme.accentPurple,
+                                            ),
+                                          );
+                                          return;
+                                        }
+
+                                        context.read<AppBloc>().add(
+                                          VerifyOtpEvent(
+                                            phone,
+                                            otp,
+                                            referredBy: ref.isNotEmpty ? ref : null,
+                                            firstName: firstName,
+                                            lastName: lastName,
+                                          ),
+                                        );
+                                      } else {
+                                        context.read<AppBloc>().add(
+                                          VerifyOtpEvent(
+                                            phone,
+                                            otp,
+                                            referredBy: ref.isNotEmpty ? ref : null,
+                                          ),
+                                        );
+                                      }
                                     }
                                   },
                                   style: ElevatedButton.styleFrom(
@@ -267,6 +331,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                     setState(() {
                                       _otpSent = false;
                                       _otpController.clear();
+                                      _firstNameController.clear();
+                                      _lastNameController.clear();
                                     });
                                   },
                                   child: const Text(

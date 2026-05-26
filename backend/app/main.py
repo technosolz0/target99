@@ -22,6 +22,8 @@ def migrate_database():
         ("bank_ifsc_code", "VARCHAR"),
         ("bank_account_holder_name", "VARCHAR"),
         ("bank_name", "VARCHAR"),
+        ("first_name", "VARCHAR"),
+        ("last_name", "VARCHAR"),
     ]
     for col_name, col_type in columns_users:
         try:

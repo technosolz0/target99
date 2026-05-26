@@ -9,6 +9,8 @@ def seed_test_users(db: Session):
     test_users = [
         User(
             name="Aarav Sharma",
+            first_name="Aarav",
+            last_name="Sharma",
             phone="9876543210",
             email="aarav.sharma@example.com",
             referral_code="T99_AARA",
@@ -21,6 +23,8 @@ def seed_test_users(db: Session):
         ),
         User(
             name="Aditya Verma",
+            first_name="Aditya",
+            last_name="Verma",
             phone="9876543211",
             email="aditya.verma@example.com",
             referral_code="T99_ADIT",
@@ -33,6 +37,8 @@ def seed_test_users(db: Session):
         ),
         User(
             name="Ananya Iyer",
+            first_name="Ananya",
+            last_name="Iyer",
             phone="9876543212",
             email="ananya.iyer@example.com",
             referral_code="T99_ANAN",
@@ -45,6 +51,8 @@ def seed_test_users(db: Session):
         ),
         User(
             name="Vikram Malhotra",
+            first_name="Vikram",
+            last_name="Malhotra",
             phone="9876543213",
             email="vikram.m@example.com",
             referral_code="T99_VIKR",
@@ -57,6 +65,8 @@ def seed_test_users(db: Session):
         ),
         User(
             name="Rohan Gupta",
+            first_name="Rohan",
+            last_name="Gupta",
             phone="9876543214",
             email="rohan.g@example.com",
             referral_code="T99_ROHA",
@@ -69,6 +79,8 @@ def seed_test_users(db: Session):
         ),
         User(
             name="Diya Kapoor",
+            first_name="Diya",
+            last_name="Kapoor",
             phone="9876543215",
             email="diya.k@example.com",
             referral_code="T99_DIYA",
@@ -81,6 +93,8 @@ def seed_test_users(db: Session):
         ),
         User(
             name="Ishaan Sen",
+            first_name="Ishaan",
+            last_name="Sen",
             phone="9876543216",
             email="ishaan.s@example.com",
             referral_code="T99_ISHA",
@@ -93,6 +107,8 @@ def seed_test_users(db: Session):
         ),
         User(
             name="Meera Nair",
+            first_name="Meera",
+            last_name="Nair",
             phone="9876543217",
             email="meera.n@example.com",
             referral_code="T99_MEER",
@@ -105,6 +121,8 @@ def seed_test_users(db: Session):
         ),
         User(
             name="Kabir Mehta",
+            first_name="Kabir",
+            last_name="Mehta",
             phone="9876543218",
             email="kabir.m@example.com",
             referral_code="T99_KABI",
@@ -117,6 +135,8 @@ def seed_test_users(db: Session):
         ),
         User(
             name="Neha Sharma",
+            first_name="Neha",
+            last_name="Sharma",
             phone="9876543219",
             email="neha.s@example.com",
             referral_code="T99_NEHA",

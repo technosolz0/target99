@@ -1,6 +1,8 @@
 class UserModel {
   final int id;
   final String? name;
+  final String? firstName;
+  final String? lastName;
   final String phone;
   final String? email;
   final String referralCode;
@@ -18,6 +20,8 @@ class UserModel {
   UserModel({
     required this.id,
     this.name,
+    this.firstName,
+    this.lastName,
     required this.phone,
     this.email,
     required this.referralCode,
@@ -37,6 +41,8 @@ class UserModel {
     return UserModel(
       id: json['id'] as int,
       name: json['name'] as String?,
+      firstName: json['first_name'] as String?,
+      lastName: json['last_name'] as String?,
       phone: json['phone'] as String,
       email: json['email'] as String?,
       referralCode: json['referral_code'] as String,
@@ -57,6 +63,8 @@ class UserModel {
     return {
       'id': id,
       'name': name,
+      'first_name': firstName,
+      'last_name': lastName,
       'phone': phone,
       'email': email,
       'referral_code': referralCode,
