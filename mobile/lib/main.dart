@@ -234,7 +234,7 @@ class AuthWrapper extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<AppBloc, AppState>(
       builder: (context, state) {
-        if (state.isAuthLoading && state.currentUser == null) {
+        if (state.isSplashLoading) {
           return const Scaffold(
             body: Center(
               child: CircularProgressIndicator(color: AppTheme.accentCyan),

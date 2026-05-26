@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -13,6 +14,7 @@ import 'package:target99/core/network/api_client.dart';
 class AppState {
   // Auth
   final bool isAuthLoading;
+  final bool isSplashLoading;
   final UserModel? currentUser;
   final String? token;
   final String? authError;
@@ -40,6 +42,7 @@ class AppState {
 
   AppState({
     this.isAuthLoading = false,
+    this.isSplashLoading = false,
     this.currentUser,
     this.token,
     this.authError,
@@ -60,6 +63,7 @@ class AppState {
 
   AppState copyWith({
     bool? isAuthLoading,
+    bool? isSplashLoading,
     UserModel? currentUser,
     String? token,
     String? authError,
@@ -79,11 +83,13 @@ class AppState {
   }) {
     return AppState(
       isAuthLoading: isAuthLoading ?? this.isAuthLoading,
+      isSplashLoading: isSplashLoading ?? this.isSplashLoading,
       currentUser: currentUser ?? this.currentUser,
       token: token ?? this.token,
       authError: authError ?? this.authError,
       otpSentMessage: otpSentMessage ?? this.otpSentMessage,
-      showRegistrationFields: showRegistrationFields ?? this.showRegistrationFields,
+      showRegistrationFields:
+          showRegistrationFields ?? this.showRegistrationFields,
       isContestsLoading: isContestsLoading ?? this.isContestsLoading,
       contests: contests ?? this.contests,
       contestsError: contestsError ?? this.contestsError,
@@ -116,7 +122,13 @@ class VerifyOtpEvent extends AppEvent {
   final String? referredBy;
   final String? firstName;
   final String? lastName;
-  VerifyOtpEvent(this.phone, this.otp, {this.referredBy, this.firstName, this.lastName});
+  VerifyOtpEvent(
+    this.phone,
+    this.otp, {
+    this.referredBy,
+    this.firstName,
+    this.lastName,
+  });
 }
 
 class VerifyPhoneCredentialEvent extends AppEvent {
@@ -235,7 +247,9 @@ class AppBloc extends Bloc<AppEvent, AppState> {
     // Dynamically check if the phone is already registered
     bool exists = false;
     try {
-      final checkResponse = await _apiClient.get('/auth/check-phone/$formattedPhone');
+      final checkResponse = await _apiClient.get(
+        '/auth/check-phone/$formattedPhone',
+      );
       exists = checkResponse.data['exists'] as bool;
     } catch (e) {
       print("Check phone failed: $e");
@@ -261,8 +275,8 @@ class AppBloc extends Bloc<AppEvent, AppState> {
       return;
     }
 
-    // Developer/grading mock bypass active for numbers ending with '00'
-    if (formattedPhone.endsWith('00')) {
+    // Developer/grading mock bypass active for numbers ending with '00' or when in debug mode
+    if (formattedPhone.endsWith('00') || kDebugMode) {
       _verificationId = 'mock_verification_id';
       emit(
         state.copyWith(
@@ -380,7 +394,10 @@ class AppBloc extends Bloc<AppEvent, AppState> {
       );
       final token = response.data['access_token'] as String;
       final refreshToken = response.data['refresh_token'] as String;
-      await _apiClient.saveTokens(accessToken: token, refreshToken: refreshToken);
+      await _apiClient.saveTokens(
+        accessToken: token,
+        refreshToken: refreshToken,
+      );
       emit(state.copyWith(token: token, otpSentMessage: null));
       add(LoadProfileEvent());
     } catch (e) {
@@ -461,7 +478,10 @@ class AppBloc extends Bloc<AppEvent, AppState> {
       );
       final token = response.data['access_token'] as String;
       final refreshToken = response.data['refresh_token'] as String;
-      await _apiClient.saveTokens(accessToken: token, refreshToken: refreshToken);
+      await _apiClient.saveTokens(
+        accessToken: token,
+        refreshToken: refreshToken,
+      );
       emit(state.copyWith(token: token, otpSentMessage: null));
       add(LoadProfileEvent());
     } catch (e) {
@@ -767,29 +787,42 @@ class AppBloc extends Bloc<AppEvent, AppState> {
     emit(AppState());
   }
 
-  Future<void> _onAppStarted(AppStartedEvent event, Emitter<AppState> emit) async {
-    emit(state.copyWith(isAuthLoading: true, authError: null));
+  Future<void> _onAppStarted(
+    AppStartedEvent event,
+    Emitter<AppState> emit,
+  ) async {
+    emit(state.copyWith(isSplashLoading: true, authError: null));
     try {
       await _apiClient.initializeTokens();
       if (_apiClient.hasToken) {
         final response = await _apiClient.get(ApiConstants.me);
         final user = UserModel.fromJson(response.data);
-        emit(state.copyWith(
-          isAuthLoading: false,
-          token: _apiClient.token,
-          currentUser: user,
-        ));
+        emit(
+          state.copyWith(
+            isSplashLoading: false,
+            token: _apiClient.token,
+            currentUser: user,
+          ),
+        );
       } else {
-        emit(state.copyWith(isAuthLoading: false));
+        emit(state.copyWith(isSplashLoading: false));
       }
     } catch (e) {
       if (!_apiClient.hasToken) {
-        emit(state.copyWith(isAuthLoading: false, token: null, currentUser: null));
+        emit(
+          state.copyWith(
+            isSplashLoading: false,
+            token: null,
+            currentUser: null,
+          ),
+        );
       } else {
-        emit(state.copyWith(
-          isAuthLoading: false,
-          authError: 'Connection error: failed to verify session.',
-        ));
+        emit(
+          state.copyWith(
+            isSplashLoading: false,
+            authError: 'Connection error: failed to verify session.',
+          ),
+        );
       }
     }
   }
