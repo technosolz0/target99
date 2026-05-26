@@ -22,62 +22,199 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
 }
 
-void main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Initialize Firebase Core
-  await Firebase.initializeApp();
-
-  // Set background messaging handler
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-
-  // Set up dependency injection container
-  setupDependencyInjection();
-
-  // Listen for foreground push notifications
-  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-    final notification = message.notification;
-    if (notification != null) {
-      scaffoldMessengerKey.currentState?.showSnackBar(
-        SnackBar(
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                notification.title ?? "Notification",
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                notification.body ?? "",
-                style: const TextStyle(color: Colors.white70),
-              ),
-            ],
-          ),
-          backgroundColor: AppTheme.accentCyan.withOpacity(0.95),
-          behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 4),
-        ),
-      );
-    }
-  });
-
   runApp(const Target99App());
 }
 
-class Target99App extends StatelessWidget {
+class Target99App extends StatefulWidget {
   const Target99App({super.key});
 
   @override
+  State<Target99App> createState() => _Target99AppState();
+}
+
+class _Target99AppState extends State<Target99App> {
+  bool _isInitialized = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _performInitialization();
+  }
+
+  Future<void> _performInitialization() async {
+    try {
+      // 1. Initialize Firebase Core
+      await Firebase.initializeApp();
+
+      // 2. Set background messaging handler
+      FirebaseMessaging.onBackgroundMessage(
+        _firebaseMessagingBackgroundHandler,
+      );
+
+      // 3. Set up dependency injection container
+      setupDependencyInjection();
+
+      // 4. Listen for foreground push notifications
+      _setupForegroundNotificationListener();
+
+      if (mounted) {
+        setState(() {
+          _isInitialized = true;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+        });
+      }
+    }
+  }
+
+  void _setupForegroundNotificationListener() {
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      final notification = message.notification;
+      if (notification != null) {
+        scaffoldMessengerKey.currentState?.showSnackBar(
+          SnackBar(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  notification.title ?? "Notification",
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  notification.body ?? "",
+                  style: const TextStyle(color: Colors.white70),
+                ),
+              ],
+            ),
+            backgroundColor: AppTheme.accentCyan.withOpacity(0.95),
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (!_isInitialized) {
+      return MaterialApp(
+        title: 'Target99',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.darkTheme,
+        home: Scaffold(
+          body: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [AppTheme.darkBg, Color(0xFF0F1426)],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
+            ),
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: const LinearGradient(
+                        colors: [AppTheme.accentCyan, AppTheme.accentPurple],
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppTheme.accentCyan.withOpacity(0.3),
+                          blurRadius: 25,
+                          spreadRadius: 3,
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.sports_esports,
+                      size: 56,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  RichText(
+                    text: const TextSpan(
+                      style: TextStyle(
+                        fontSize: 36,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -1,
+                      ),
+                      children: [
+                        TextSpan(
+                          text: 'target',
+                          style: TextStyle(color: AppTheme.accentCyan),
+                        ),
+                        TextSpan(
+                          text: '99',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'SKILL-BASED REAL MONEY GAMING',
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: AppTheme.textMuted,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 2.5,
+                    ),
+                  ),
+                  const SizedBox(height: 48),
+                  if (_error != null) ...[
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                      child: Text(
+                        'Initialization failed: $_error',
+                        style: const TextStyle(
+                          color: AppTheme.accentRed,
+                          fontSize: 12,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () {
+                        setState(() {
+                          _error = null;
+                        });
+                        _performInitialization();
+                      },
+                      child: const Text('RETRY'),
+                    ),
+                  ] else
+                    const CircularProgressIndicator(color: AppTheme.accentCyan),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
     return BlocProvider<AppBloc>(
       create: (context) => AppBloc(getIt<ApiClient>())..add(AppStartedEvent()),
       child: MaterialApp(
-        title: 'target99',
+        title: 'Target99',
         scaffoldMessengerKey: scaffoldMessengerKey,
         debugShowCheckedModeBanner: false,
         theme: AppTheme.darkTheme,
@@ -153,10 +290,17 @@ class _MainNavigationLayoutState extends State<MainNavigationLayout> {
             setState(() {
               _currentIndex = index;
             });
-            
+
             // Log tab switch in Firebase Analytics
-            final screenNames = ['HomeScreen', 'WalletScreen', 'ReferralScreen', 'ProfileScreen'];
-            FirebaseAnalytics.instance.logScreenView(screenName: screenNames[index]);
+            final screenNames = [
+              'HomeScreen',
+              'WalletScreen',
+              'ReferralScreen',
+              'ProfileScreen',
+            ];
+            FirebaseAnalytics.instance.logScreenView(
+              screenName: screenNames[index],
+            );
 
             // Fetch updates contextually on tab switch
             if (index == 1) {
