@@ -1,8 +1,11 @@
 import os
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
-load_dotenv()
+# Load environment variables from .env file using its absolute path
+# This ensures it loads successfully regardless of uvicorn's working directory
+backend_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+env_path = os.path.join(backend_dir, ".env")
+load_dotenv(dotenv_path=env_path)
 
 class Settings:
     PROJECT_NAME: str = "target99"
