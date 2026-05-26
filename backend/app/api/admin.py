@@ -65,6 +65,11 @@ def ban_user(id: int, ban: bool, db: Session = Depends(get_db)):
 
 @router.post("/contests", response_model=ContestResponse)
 def create_contest(request: ContestCreate, db: Session = Depends(get_db)):
+    import json
+    prize_rules_json = None
+    if request.prize_rules:
+        prize_rules_json = json.dumps([r.model_dump() for r in request.prize_rules])
+        
     contest = Contest(
         title=request.title,
         entry_fee=request.entry_fee,
@@ -72,7 +77,8 @@ def create_contest(request: ContestCreate, db: Session = Depends(get_db)):
         prize_pool=request.prize_pool,
         start_time=request.start_time,
         joined_slots=0,
-        status="UPCOMING"
+        status="UPCOMING",
+        prize_rules=prize_rules_json
     )
     db.add(contest)
     db.commit()
@@ -84,6 +90,15 @@ def get_withdrawals(db: Session = Depends(get_db)):
     return (
         db.query(WalletTransaction)
         .filter(WalletTransaction.type == "WITHDRAWAL")
+        .order_by(WalletTransaction.created_at.desc())
+        .all()
+    )
+
+@router.get("/transactions", response_model=List[TransactionResponse])
+def get_transactions(db: Session = Depends(get_db)):
+    return (
+        db.query(WalletTransaction)
+        .filter(WalletTransaction.type.in_(["DEPOSIT", "WITHDRAWAL"]))
         .order_by(WalletTransaction.created_at.desc())
         .all()
     )
@@ -181,14 +196,35 @@ def complete_contest(id: int, db: Session = Depends(get_db)):
     elif len(participants) == 2:
         payout_pcts = {1: 0.60, 2: 0.40}
         
+    # Check if custom prize rules exist
+    import json
+    rules = []
+    if contest.prize_rules:
+        try:
+            rules = json.loads(contest.prize_rules)
+        except Exception:
+            pass
+            
     payouts_made = 0
     for p in participants:
         user = db.query(User).filter(User.id == p.user_id).first()
         if not user:
             continue
             
-        if p.rank in payout_pcts:
-            payout_amount = contest.prize_pool * payout_pcts[p.rank]
+        payout_amount = 0.0
+        if rules:
+            for rule in rules:
+                min_r = rule.get("min_rank")
+                max_r = rule.get("max_rank")
+                prize = rule.get("prize", 0.0)
+                if min_r <= p.rank <= max_r:
+                    payout_amount = float(prize)
+                    break
+        else:
+            if p.rank in payout_pcts:
+                payout_amount = contest.prize_pool * payout_pcts[p.rank]
+                
+        if payout_amount > 0:
             # Credit prize triggers standard winning notification inside WalletService.credit_prize
             WalletService.credit_prize(db, user, payout_amount)
             payouts_made += 1

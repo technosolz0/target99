@@ -518,6 +518,43 @@ class _HomeScreenState extends State<HomeScreen> {
                   'Fee will be deducted from your Wallet balances.\nBonus Wallet can pay up to 10% of the fee.',
                   style: TextStyle(fontSize: 10, color: AppTheme.textMuted),
                 ),
+                if (contest.prizeRules != null && contest.prizeRules!.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  const Divider(color: AppTheme.borderCol, height: 1),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'PRIZE BREAKDOWN',
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: AppTheme.textMuted,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    constraints: const BoxConstraints(maxHeight: 100),
+                    child: SingleChildScrollView(
+                      child: Column(
+                        children: contest.prizeRules!.map((rule) {
+                          final rankText = rule.minRank == rule.maxRank
+                              ? 'Rank ${rule.minRank}'
+                              : 'Ranks ${rule.minRank}-${rule.maxRank}';
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 2.0),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(rankText, style: const TextStyle(fontSize: 12, color: AppTheme.textMuted)),
+                                Text('₹${rule.prize.toStringAsFixed(0)}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.accentEmerald)),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 24),
                 ElevatedButton(
                   onPressed: () {

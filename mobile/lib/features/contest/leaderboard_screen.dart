@@ -87,7 +87,35 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                               _infoSub('Entry', '₹${widget.contest.entryFee.toInt()}', AppTheme.accentCyan),
                               _infoSub('Status', widget.contest.status, AppTheme.accentAmber),
                             ],
-                          )
+                          ),
+                          if (widget.contest.prizeRules != null && widget.contest.prizeRules!.isNotEmpty) ...[
+                            const SizedBox(height: 12),
+                            const Divider(color: AppTheme.borderCol, height: 1),
+                            const SizedBox(height: 8),
+                            const Text(
+                              'PRIZE BREAKDOWN',
+                              style: TextStyle(
+                                fontSize: 9,
+                                color: AppTheme.textMuted,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Wrap(
+                              spacing: 12,
+                              runSpacing: 4,
+                              alignment: WrapAlignment.center,
+                              children: widget.contest.prizeRules!.map((rule) {
+                                final rankText = rule.minRank == rule.maxRank
+                                    ? 'Rank ${rule.minRank}'
+                                    : 'Rank ${rule.minRank}-${rule.maxRank}';
+                                return Text(
+                                  '$rankText: ₹${rule.prize.toStringAsFixed(0)}',
+                                  style: const TextStyle(fontSize: 11, color: Colors.white70),
+                                );
+                              }).toList(),
+                            ),
+                          ],
                         ],
                       ),
                     ),

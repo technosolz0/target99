@@ -11,28 +11,37 @@ let state = {
 
 // Elements
 const el = {
-    tabs: document.querySelectorAll('.menu-item'),
-    panels: document.querySelectorAll('.tab-panel'),
-    pageTitle: document.getElementById('page-title'),
-    pageSubtitle: document.getElementById('page-subtitle'),
-    btnRefresh: document.getElementById('btn-refresh'),
-    toast: document.getElementById('toast'),
+    get tabs() { return document.querySelectorAll('.menu-item'); },
+    get panels() { return document.querySelectorAll('.tab-panel'); },
+    get pageTitle() { return document.getElementById('page-title'); },
+    get pageSubtitle() { return document.getElementById('page-subtitle'); },
+    get btnRefresh() { return document.getElementById('btn-refresh'); },
+    get toast() { return document.getElementById('toast'); },
     
     // Stats
-    statUsers: document.getElementById('stat-users'),
-    statDeposits: document.getElementById('stat-deposits'),
-    statContests: document.getElementById('stat-contests'),
-    statWinnings: document.getElementById('stat-winnings'),
-    statRevenue: document.getElementById('stat-revenue'),
+    get statUsers() { return document.getElementById('stat-users'); },
+    get statDeposits() { return document.getElementById('stat-deposits'); },
+    get statContests() { return document.getElementById('stat-contests'); },
+    get statWinnings() { return document.getElementById('stat-winnings'); },
+    get statRevenue() { return document.getElementById('stat-revenue'); },
     
     // Forms
-    quickContestForm: document.getElementById('quick-contest-form'),
+    get quickContestForm() { return document.getElementById('quick-contest-form'); },
     
     // Tables
-    usersTable: document.getElementById('users-table-body'),
-    contestsTable: document.getElementById('contests-table-body'),
-    withdrawalsTable: document.getElementById('withdrawals-table-body'),
-    userSearch: document.getElementById('user-search')
+    get usersTable() { return document.getElementById('users-table-body'); },
+    get contestsTable() { return document.getElementById('contests-table-body'); },
+    get withdrawalsTable() { return document.getElementById('withdrawals-table-body'); },
+    get transactionsTable() { return document.getElementById('transactions-table-body'); },
+    get userSearch() { return document.getElementById('user-search'); },
+
+    // Modal
+    get btnOpenCreateModal() { return document.getElementById('btn-open-create-modal'); },
+    get createContestModal() { return document.getElementById('create-contest-modal'); },
+    get btnCloseModal() { return document.getElementById('btn-close-modal'); },
+    get modalContestForm() { return document.getElementById('modal-contest-form'); },
+    get btnAddPrizeRule() { return document.getElementById('btn-add-prize-rule'); },
+    get prizeRulesList() { return document.getElementById('prize-rules-list'); }
 };
 
 // Initialize Application
@@ -95,8 +104,8 @@ function updateHeaders(tab) {
             el.pageSubtitle.innerText = "Monitor active game lobbies and track players";
             break;
         case 'withdrawals':
-            el.pageTitle.innerText = "Withdrawal Controls";
-            el.pageSubtitle.innerText = "Verify KYC PAN logs and approve payout requests";
+            el.pageTitle.innerText = "Financial Transactions Log";
+            el.pageSubtitle.innerText = "Approve withdrawals and view complete deposit & withdrawal ledger";
             break;
         case 'notifications':
             el.pageTitle.innerText = "Notification Center";
@@ -232,6 +241,142 @@ function setupEventHandlers() {
         const query = e.target.value.toLowerCase();
         filterUsersTable(query);
     });
+
+    // Modal Event Handlers
+    if (el.btnOpenCreateModal) {
+        el.btnOpenCreateModal.addEventListener('click', () => {
+            // Reset form and empty dynamic prize rules
+            el.modalContestForm.reset();
+            el.prizeRulesList.innerHTML = '';
+            
+            // Set default date-time to 2 hours from now
+            const localOffset = new Date().getTimezoneOffset() * 60000; // in ms
+            const localISOTime = new Date(Date.now() + 2 * 60 * 60 * 1000 - localOffset).toISOString().slice(0, 16);
+            document.getElementById('m-start-time').value = localISOTime;
+            
+            // Open modal
+            el.createContestModal.classList.add('show');
+        });
+    }
+
+    if (el.btnCloseModal) {
+        el.btnCloseModal.addEventListener('click', () => {
+            el.createContestModal.classList.remove('show');
+        });
+    }
+
+    // Dynamic Prize Rule row adding
+    if (el.btnAddPrizeRule) {
+        el.btnAddPrizeRule.addEventListener('click', () => {
+            // UX: auto-calculate next min rank
+            const rows = el.prizeRulesList.querySelectorAll('.prize-rule-row');
+            let nextMin = 1;
+            if (rows.length > 0) {
+                const lastMaxInput = rows[rows.length - 1].querySelector('.rule-max-rank');
+                const lastMax = parseInt(lastMaxInput.value);
+                if (!isNaN(lastMax)) {
+                    nextMin = lastMax + 1;
+                }
+            }
+            
+            const row = document.createElement('div');
+            row.className = 'prize-rule-row';
+            row.innerHTML = `
+                <input type="number" placeholder="Min" class="rule-min-rank" min="1" value="${nextMin}" required style="padding: 6px 8px;">
+                <span>to</span>
+                <input type="number" placeholder="Max" class="rule-max-rank" min="1" value="${nextMin}" required style="padding: 6px 8px;">
+                <input type="number" placeholder="Prize (₹)" class="rule-prize" min="0" required style="padding: 6px 8px;">
+                <button type="button" class="btn-remove-rule" title="Remove Rule">&times;</button>
+            `;
+            
+            row.querySelector('.btn-remove-rule').addEventListener('click', () => {
+                row.remove();
+            });
+            
+            const minInput = row.querySelector('.rule-min-rank');
+            const maxInput = row.querySelector('.rule-max-rank');
+            minInput.addEventListener('input', () => {
+                if (maxInput.value === minInput.dataset.prevMin || maxInput.value === '') {
+                    maxInput.value = minInput.value;
+                }
+                minInput.dataset.prevMin = minInput.value;
+            });
+            minInput.dataset.prevMin = minInput.value;
+            
+            el.prizeRulesList.appendChild(row);
+            el.prizeRulesList.scrollTop = el.prizeRulesList.scrollHeight;
+        });
+    }
+
+    if (el.modalContestForm) {
+        el.modalContestForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const title = document.getElementById('m-title').value.trim();
+            const entryFee = parseFloat(document.getElementById('m-fee').value);
+            const totalSlots = parseInt(document.getElementById('m-slots').value);
+            const prizePool = parseFloat(document.getElementById('m-pool').value);
+            const startTimeStr = document.getElementById('m-start-time').value;
+            
+            if (!title || isNaN(entryFee) || isNaN(totalSlots) || isNaN(prizePool) || !startTimeStr) {
+                showToast("Please fill all required fields correctly.", true);
+                return;
+            }
+            
+            const startTime = new Date(startTimeStr).toISOString();
+            
+            // Collect prize rules
+            const prizeRules = [];
+            const rows = el.prizeRulesList.querySelectorAll('.prize-rule-row');
+            for (const r of rows) {
+                const minRank = parseInt(r.querySelector('.rule-min-rank').value);
+                const maxRank = parseInt(r.querySelector('.rule-max-rank').value);
+                const prize = parseFloat(r.querySelector('.rule-prize').value);
+                
+                if (isNaN(minRank) || isNaN(maxRank) || isNaN(prize)) {
+                    showToast("Please verify all prize rule values are valid numbers.", true);
+                    return;
+                }
+                if (minRank > maxRank) {
+                    showToast(`Rule min rank (${minRank}) cannot be greater than max rank (${maxRank}).`, true);
+                    return;
+                }
+                
+                prizeRules.push({
+                    min_rank: minRank,
+                    max_rank: maxRank,
+                    prize: prize
+                });
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/admin/contests`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        title,
+                        entry_fee: entryFee,
+                        total_slots: totalSlots,
+                        prize_pool: prizePool,
+                        start_time: startTime,
+                        prize_rules: prizeRules.length > 0 ? prizeRules : null
+                    })
+                });
+                
+                if (!response.ok) throw new Error(await response.text());
+                
+                showToast("New contest deployed successfully!");
+                el.createContestModal.classList.remove('show');
+                el.modalContestForm.reset();
+                el.prizeRulesList.innerHTML = '';
+                
+                loadDashboardData();
+            } catch (err) {
+                console.error(err);
+                showToast("Failed to deploy contest: " + err.message, true);
+            }
+        });
+    }
 }
 
 // Data loading
@@ -394,6 +539,15 @@ function renderContestsTable(contestsList) {
             ? `<button class="btn btn-action btn-unban" onclick="completeContest(${c.id})">Complete</button>`
             : `<span class="text-muted" style="font-size:12px;">Payout Done</span>`;
 
+        let rulesHtml = '';
+        if (c.prize_rules && c.prize_rules.length > 0) {
+            rulesHtml = `<div style="font-size: 11px; color: var(--text-muted); margin-top: 5px; display: flex; flex-direction: column; gap: 2px;">` + 
+                c.prize_rules.map(r => `<span>Rank ${r.min_rank}${r.min_rank === r.max_rank ? '' : '-' + r.max_rank}: ₹${r.prize}</span>`).join('') + 
+                `</div>`;
+        } else {
+            rulesHtml = `<span style="font-size: 11px; color: var(--text-muted); font-style: italic; margin-top: 5px; display: block;">Standard distribution</span>`;
+        }
+
         return `
             <tr>
                 <td>${c.id}</td>
@@ -407,7 +561,10 @@ function renderContestsTable(contestsList) {
                         </div>
                     </div>
                 </td>
-                <td><strong>₹${c.prize_pool.toFixed(2)}</strong></td>
+                <td>
+                    <strong>₹${c.prize_pool.toFixed(2)}</strong>
+                    ${rulesHtml}
+                </td>
                 <td>${startTimeStr}</td>
                 <td><span class="badge ${statusBadge}">${c.status}</span></td>
                 <td>
@@ -421,12 +578,26 @@ function renderContestsTable(contestsList) {
 }
 
 // 3. Payout/Withdrawal Operations
+// 3. Payout/Withdrawal Operations & Transactions Log
 async function loadWithdrawals() {
     try {
-        const res = await fetch(`${API_BASE}/admin/withdrawals`);
-        if (!res.ok) throw new Error("Failed to load withdrawals.");
-        state.withdrawals = await res.json();
-        renderWithdrawalsTable(state.withdrawals);
+        // Fetch users first to map user details
+        const usersRes = await fetch(`${API_BASE}/admin/users`);
+        if (usersRes.ok) {
+            state.users = await usersRes.json();
+        }
+
+        // Fetch all transactions
+        const res = await fetch(`${API_BASE}/admin/transactions`);
+        if (!res.ok) throw new Error("Failed to load transactions history.");
+        const allTransactions = await res.json();
+        
+        // Filter pending withdrawals for approvals table
+        const pendingWithdrawals = allTransactions.filter(t => t.type === 'WITHDRAWAL' && t.status === 'PENDING');
+        renderWithdrawalsTable(pendingWithdrawals);
+        
+        // Render completed history table
+        renderTransactionHistoryTable(allTransactions);
     } catch (err) {
         showToast(err.message, true);
     }
@@ -434,35 +605,64 @@ async function loadWithdrawals() {
 
 function renderWithdrawalsTable(withdrawalsList) {
     if (withdrawalsList.length === 0) {
-        el.withdrawalsTable.innerHTML = `<tr><td colspan="6" class="table-placeholder">No withdrawals requested.</td></tr>`;
+        el.withdrawalsTable.innerHTML = `<tr><td colspan="6" class="table-placeholder">No pending withdrawals.</td></tr>`;
         return;
     }
     
     el.withdrawalsTable.innerHTML = withdrawalsList.map(w => {
         const dateStr = new Date(w.created_at).toLocaleString();
+        const userObj = state.users.find(u => u.id === w.user_id);
+        const userDetails = userObj ? `${userObj.name || 'Anonymous'} (${userObj.phone})` : `User #${w.user_id}`;
         
-        let actions = '<span class="text-muted">-</span>';
-        if (w.status === 'PENDING') {
-            actions = `
-                <div style="display:flex; gap: 8px;">
-                    <button class="btn btn-action btn-unban" onclick="approveWithdrawal(${w.id}, true)">Approve</button>
-                    <button class="btn btn-action btn-ban" onclick="approveWithdrawal(${w.id}, false)">Reject</button>
-                </div>
-            `;
-        }
-        
-        let statusClass = 'badge-warning';
-        if (w.status === 'SUCCESS') statusClass = 'badge-success';
-        if (w.status === 'FAILED') statusClass = 'badge-error';
+        let actions = `
+            <div style="display:flex; gap: 8px;">
+                <button class="btn btn-action btn-unban" onclick="approveWithdrawal(${w.id}, true)">Approve</button>
+                <button class="btn btn-action btn-ban" onclick="approveWithdrawal(${w.id}, false)">Reject</button>
+            </div>
+        `;
         
         return `
             <tr>
-                <td>${w.id}</td>
-                <td>User #${w.user_id}</td>
+                <td>#${w.id}</td>
+                <td>${userDetails}</td>
                 <td><strong style="color:var(--error)">₹${w.amount.toFixed(2)}</strong></td>
                 <td>${dateStr}</td>
-                <td><span class="badge ${statusClass}">${w.status}</span></td>
+                <td><span class="badge badge-warning">PENDING</span></td>
                 <td>${actions}</td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function renderTransactionHistoryTable(txList) {
+    if (!el.transactionsTable) return;
+    
+    if (txList.length === 0) {
+        el.transactionsTable.innerHTML = `<tr><td colspan="6" class="table-placeholder">No transactions found.</td></tr>`;
+        return;
+    }
+    
+    el.transactionsTable.innerHTML = txList.map(tx => {
+        const dateStr = new Date(tx.created_at).toLocaleString();
+        const userObj = state.users.find(u => u.id === tx.user_id);
+        const userDetails = userObj ? `${userObj.name || 'Anonymous'} (${userObj.phone})` : `User #${tx.user_id}`;
+        
+        let statusBadge = 'badge-warning';
+        if (tx.status === 'SUCCESS') statusBadge = 'badge-success';
+        if (tx.status === 'FAILED') statusBadge = 'badge-error';
+        
+        const typeBadge = tx.type === 'DEPOSIT' ? 'badge-success' : 'badge-error';
+        const typeStyle = tx.type === 'DEPOSIT' ? 'color: var(--success)' : 'color: var(--error)';
+        const prefix = tx.type === 'DEPOSIT' ? '+' : '-';
+        
+        return `
+            <tr>
+                <td>#${tx.id}</td>
+                <td>${userDetails}</td>
+                <td><span class="badge ${typeBadge}">${tx.type}</span></td>
+                <td><strong style="${typeStyle}">${prefix}₹${tx.amount.toFixed(2)}</strong></td>
+                <td><span class="badge ${statusBadge}">${tx.status}</span></td>
+                <td>${dateStr}</td>
             </tr>
         `;
     }).join('');

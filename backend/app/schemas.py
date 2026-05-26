@@ -1,6 +1,7 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from datetime import datetime
 from typing import List, Optional
+import json
 
 class Token(BaseModel):
     access_token: str
@@ -34,12 +35,18 @@ class UserResponse(BaseModel):
     class Config:
         from_attributes = True
 
+class PrizeRuleSchema(BaseModel):
+    min_rank: int
+    max_rank: int
+    prize: float
+
 class ContestCreate(BaseModel):
     title: str
     entry_fee: float
     total_slots: int
     prize_pool: float
     start_time: datetime
+    prize_rules: Optional[List[PrizeRuleSchema]] = None
 
 class ContestResponse(BaseModel):
     id: int
@@ -50,6 +57,17 @@ class ContestResponse(BaseModel):
     prize_pool: float
     start_time: datetime
     status: str
+    prize_rules: Optional[List[PrizeRuleSchema]] = None
+
+    @field_validator("prize_rules", mode="before")
+    @classmethod
+    def parse_prize_rules(cls, v):
+        if isinstance(v, str):
+            try:
+                return json.loads(v)
+            except Exception:
+                return []
+        return v
 
     class Config:
         from_attributes = True

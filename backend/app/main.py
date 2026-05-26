@@ -17,20 +17,32 @@ Base.metadata.create_all(bind=engine)
 
 def migrate_database():
     from sqlalchemy import text
-    with engine.begin() as conn:
-        columns = [
-            ("bank_account_number", "VARCHAR"),
-            ("bank_ifsc_code", "VARCHAR"),
-            ("bank_account_holder_name", "VARCHAR"),
-            ("bank_name", "VARCHAR"),
-        ]
-        for col_name, col_type in columns:
-            try:
+    columns_users = [
+        ("bank_account_number", "VARCHAR"),
+        ("bank_ifsc_code", "VARCHAR"),
+        ("bank_account_holder_name", "VARCHAR"),
+        ("bank_name", "VARCHAR"),
+    ]
+    for col_name, col_type in columns_users:
+        try:
+            with engine.begin() as conn:
                 conn.execute(text(f"ALTER TABLE users ADD COLUMN {col_name} {col_type}"))
-                print(f"Schema Migration: Added column '{col_name}' to users table.")
-            except Exception:
-                # Ignore error (column already exists)
-                pass
+            print(f"Schema Migration: Added column '{col_name}' to users table.")
+        except Exception:
+            # Ignore error (column already exists)
+            pass
+
+    columns_contests = [
+        ("prize_rules", "TEXT"),
+    ]
+    for col_name, col_type in columns_contests:
+        try:
+            with engine.begin() as conn:
+                conn.execute(text(f"ALTER TABLE contests ADD COLUMN {col_name} {col_type}"))
+            print(f"Schema Migration: Added column '{col_name}' to contests table.")
+        except Exception:
+            # Ignore error (column already exists)
+            pass
 
 migrate_database()
 

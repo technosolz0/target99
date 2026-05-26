@@ -39,6 +39,7 @@ class Contest(Base):
     prize_pool = Column(Float, nullable=False)
     start_time = Column(DateTime, nullable=False)
     status = Column(String, default="UPCOMING")  # UPCOMING, ACTIVE, COMPLETED
+    prize_rules = Column(String, nullable=True)  # JSON string of rank-wise rules
 
     participants = relationship("ContestParticipant", back_populates="contest")
 

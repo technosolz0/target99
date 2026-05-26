@@ -1,3 +1,31 @@
+class PrizeRuleModel {
+  final int minRank;
+  final int maxRank;
+  final double prize;
+
+  PrizeRuleModel({
+    required this.minRank,
+    required this.maxRank,
+    required this.prize,
+  });
+
+  factory PrizeRuleModel.fromJson(Map<String, dynamic> json) {
+    return PrizeRuleModel(
+      minRank: json['min_rank'] as int,
+      maxRank: json['max_rank'] as int,
+      prize: (json['prize'] as num).toDouble(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'min_rank': minRank,
+      'max_rank': maxRank,
+      'prize': prize,
+    };
+  }
+}
+
 class ContestModel {
   final int id;
   final String title;
@@ -7,6 +35,7 @@ class ContestModel {
   final double prizePool;
   final DateTime startTime;
   final String status;
+  final List<PrizeRuleModel>? prizeRules;
 
   ContestModel({
     required this.id,
@@ -17,6 +46,7 @@ class ContestModel {
     required this.prizePool,
     required this.startTime,
     required this.status,
+    this.prizeRules,
   });
 
   factory ContestModel.fromJson(Map<String, dynamic> json) {
@@ -29,6 +59,11 @@ class ContestModel {
       prizePool: (json['prize_pool'] as num).toDouble(),
       startTime: DateTime.parse(json['start_time'] as String),
       status: json['status'] as String,
+      prizeRules: json['prize_rules'] != null
+          ? (json['prize_rules'] as List)
+              .map((item) => PrizeRuleModel.fromJson(item as Map<String, dynamic>))
+              .toList()
+          : null,
     );
   }
 
@@ -42,6 +77,7 @@ class ContestModel {
       'prize_pool': prizePool,
       'start_time': startTime.toIso8601String(),
       'status': status,
+      'prize_rules': prizeRules?.map((r) => r.toJson()).toList(),
     };
   }
 
