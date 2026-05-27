@@ -179,3 +179,62 @@ def seed_test_users(db: Session):
 
     db.bulk_save_objects(test_users)
     db.commit()
+
+def seed_rtp_settings(db: Session):
+    from app.models import RTPSettings
+    import json
+
+    if db.query(RTPSettings).count() > 0:
+        return
+
+    # Dynamic RTP settings matching specification
+    settings = [
+        RTPSettings(
+            min_amount=1.0,
+            max_amount=49.0,
+            probability_json=json.dumps({
+                "Lose": 20.0,
+                "1x": 20.0,
+                "1.1x": 18.0,
+                "1.2x": 15.0,
+                "1.5x": 12.0,
+                "2x": 8.0,
+                "3x": 5.0,
+                "5x": 2.0
+            }),
+            enabled=True
+        ),
+        RTPSettings(
+            min_amount=50.0,
+            max_amount=100.0,
+            probability_json=json.dumps({
+                "Lose": 45.0,
+                "1x": 20.0,
+                "1.1x": 15.0,
+                "1.2x": 8.0,
+                "1.5x": 6.0,
+                "2x": 4.0,
+                "3x": 1.5,
+                "5x": 0.5
+            }),
+            enabled=True
+        ),
+        RTPSettings(
+            min_amount=101.0,
+            max_amount=1000000.0,
+            probability_json=json.dumps({
+                "Lose": 65.0,
+                "1x": 15.0,
+                "1.1x": 10.0,
+                "1.2x": 5.0,
+                "1.5x": 3.0,
+                "2x": 1.5,
+                "3x": 0.4,
+                "5x": 0.1
+            }),
+            enabled=True
+        )
+    ]
+    db.bulk_save_objects(settings)
+    db.commit()
+

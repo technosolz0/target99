@@ -182,3 +182,68 @@ class RazorpayVerifyPaymentRequest(BaseModel):
     razorpay_signature: str
     amount: float
 
+class SpinCreateRequest(BaseModel):
+    bet_amount: float = Field(..., gt=0, description="Bet amount in INR")
+    idempotency_key: str = Field(..., description="Unique UUID to prevent duplicate spins")
+    device_id: Optional[str] = None
+
+class SpinResponse(BaseModel):
+    id: int
+    bet_amount: float
+    multiplier: float
+    win_amount: float
+    result_type: str
+    wheel_segment: str
+    segment_index: int
+    created_at: datetime
+    updated_balance: float
+
+    class Config:
+        from_attributes = True
+
+class RTPSettingsResponse(BaseModel):
+    id: int
+    min_amount: float
+    max_amount: float
+    probability_json: str
+    enabled: bool
+
+    class Config:
+        from_attributes = True
+
+class RTPUpdateRequest(BaseModel):
+    probability_json: str
+    enabled: bool
+
+class SpinStatsResponse(BaseModel):
+    total_spins: int
+    total_winnings_paid: float
+    total_bet_amount: float
+    platform_net_profit: float
+    payout_ratio: float
+
+class SpinLogAdminResponse(BaseModel):
+    id: int
+    user_id: int
+    user_phone: str
+    bet_amount: float
+    multiplier: float
+    win_amount: float
+    result_type: str
+    wheel_segment: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class SuspiciousUserResponse(BaseModel):
+    user_id: int
+    name: Optional[str]
+    phone: str
+    total_spins: int
+    win_count: int
+    win_ratio: float
+    total_bet: float
+    total_win: float
+
+

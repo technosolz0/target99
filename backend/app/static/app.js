@@ -121,6 +121,10 @@ function updateHeaders(tab) {
             el.pageTitle.innerText = "Wallet Manager";
             el.pageSubtitle.innerText = "Directly adjust deposit, winning, or bonus balances for any user account";
             break;
+        case 'spin-engine':
+            el.pageTitle.innerText = "Casino Spin Engine Controller";
+            el.pageSubtitle.innerText = "Configure RTP settings, monitor platform revenue, and review gaming logs";
+            break;
     }
 }
 
@@ -542,6 +546,9 @@ function loadTabSpecificData(tab) {
             break;
         case 'wallet-manager':
             loadWalletManagerUsers();
+            break;
+        case 'spin-engine':
+            loadSpinEngineData();
             break;
     }
 }
@@ -1140,6 +1147,254 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+
+
+// ==========================================
+// CASINO SPIN WHEEL ENGINE ADMINISTRATIVE CONTROLLERS
+// ==========================================
+
+// Global state variables for spin settings
+state.rtp_settings = [];
+state.maintenance_active = false;
+
+async function loadSpinEngineData() {
+    try {
+        // 1. Fetch spin metrics/stats
+        const statsRes = await fetch(`${API_BASE}/admin/spin/stats`);
+        if (statsRes.ok) {
+            const stats = await statsRes.json();
+            document.getElementById('spin-stat-bets').innerText = `₹${stats.total_bet_amount.toFixed(2)}`;
+            document.getElementById('spin-stat-winnings').innerText = `₹${stats.total_winnings_paid.toFixed(2)}`;
+            document.getElementById('spin-stat-profit').innerText = `₹${stats.platform_net_profit.toFixed(2)}`;
+            document.getElementById('spin-stat-rtp').innerText = `${stats.payout_ratio.toFixed(2)}%`;
+            
+            const profitEl = document.getElementById('spin-stat-profit');
+            if (stats.platform_net_profit < 0) {
+                profitEl.style.color = 'var(--error)';
+            } else {
+                profitEl.style.color = 'var(--success)';
+            }
+        }
+
+        // 2. Fetch maintenance lockout status
+        const maintenanceRes = await fetch(`${API_BASE}/admin/maintenance`);
+        if (maintenanceRes.ok) {
+            const m = await maintenanceRes.json();
+            state.maintenance_active = m.maintenance_mode;
+            const btn = document.getElementById('btn-toggle-maintenance');
+            if (btn) {
+                btn.innerText = state.maintenance_active ? "Unlock Game Access" : "Lock Game Access";
+                btn.style.backgroundColor = state.maintenance_active ? 'var(--success)' : 'var(--error)';
+                btn.style.color = '#fff';
+            }
+        }
+
+        // 3. Fetch RTP configurations
+        await loadRtpSettings();
+
+        // 4. Fetch suspicious users
+        await loadSuspiciousUsers();
+
+        // 5. Fetch live spin audit logs
+        await loadSpinLogs();
+
+    } catch (err) {
+        console.error(err);
+        showToast("Error updating Spin Engine dashboard: " + err.message, true);
+    }
+}
+
+async function loadRtpSettings() {
+    try {
+        const res = await fetch(`${API_BASE}/admin/rtp`);
+        if (!res.ok) throw new Error("Failed to load RTP data.");
+        state.rtp_settings = await res.json();
+        
+        // Update JSON editor with currently selected tier range
+        const tierSelect = document.getElementById('rtp-tier-select');
+        if (tierSelect) {
+            const tierVal = parseInt(tierSelect.value) || 1;
+            const setting = state.rtp_settings.find(r => r.id === tierVal);
+            if (setting) {
+                // Pretty print JSON
+                try {
+                    const parsed = JSON.parse(setting.probability_json);
+                    document.getElementById('rtp-json-editor').value = JSON.stringify(parsed, null, 4);
+                } catch (_) {
+                    document.getElementById('rtp-json-editor').value = setting.probability_json;
+                }
+            }
+        }
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+async function loadSuspiciousUsers() {
+    try {
+        const res = await fetch(`${API_BASE}/admin/suspicious-users`);
+        if (!res.ok) throw new Error("Failed to load suspicious users.");
+        const list = await res.json();
+        
+        const tbody = document.getElementById('suspicious-spins-table-body');
+        if (!tbody) return;
+        
+        if (list.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" class="table-placeholder">No suspicious activity detected.</td></tr>`;
+            return;
+        }
+        
+        tbody.innerHTML = list.map(u => {
+            const netProfit = u.total_win - u.total_bet;
+            return `
+                <tr>
+                    <td>
+                        <strong style="color:var(--text-main);">${u.name || 'Anonymous'}</strong>
+                        <span class="text-muted" style="display:block; font-size:10px;">${u.phone} (ID: ${u.user_id})</span>
+                    </td>
+                    <td>${u.total_spins}</td>
+                    <td>
+                        <strong style="color:${u.win_ratio > 65.0 ? 'var(--error)' : 'var(--text-muted)'}">${u.win_ratio.toFixed(1)}%</strong>
+                    </td>
+                    <td>
+                        <strong style="color:${netProfit > 0 ? 'var(--success)' : 'var(--text-muted)'}">₹${netProfit.toFixed(2)}</strong>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+async function loadSpinLogs() {
+    try {
+        const res = await fetch(`${API_BASE}/admin/spin/logs`);
+        if (!res.ok) throw new Error("Failed to load spin logs.");
+        const logs = await res.json();
+        
+        const tbody = document.getElementById('spin-logs-table-body');
+        if (!tbody) return;
+        
+        if (logs.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" class="table-placeholder">No spins logged yet.</td></tr>`;
+            return;
+        }
+        
+        tbody.innerHTML = logs.map(s => {
+            const dateStr = new Date(s.created_at).toLocaleString();
+            const winStyle = s.win_amount > 0 ? 'color: var(--success)' : 'color: var(--text-muted)';
+            const sign = s.win_amount > 0 ? '+' : '';
+            return `
+                <tr>
+                    <td>#${s.id}</td>
+                    <td><strong>${s.user_phone}</strong></td>
+                    <td>₹${s.bet_amount.toFixed(2)}</td>
+                    <td><span class="badge ${s.win_amount > 0 ? 'badge-success' : 'badge-warning'}">${s.multiplier}x</span></td>
+                    <td><strong style="${winStyle}">${sign}₹${s.win_amount.toFixed(2)}</strong></td>
+                    <td><span class="badge badge-info">${s.wheel_segment}</span></td>
+                    <td>${dateStr}</td>
+                </tr>
+            `;
+        }).join('');
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+// Add DOM Listeners for Spin Engine Tab Elements
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Bet range select dropdown listener
+    const tierSelect = document.getElementById('rtp-tier-select');
+    if (tierSelect) {
+        tierSelect.addEventListener('change', (e) => {
+            const tierVal = parseInt(e.target.value);
+            const setting = state.rtp_settings.find(r => r.id === tierVal);
+            if (setting) {
+                try {
+                    const parsed = JSON.parse(setting.probability_json);
+                    document.getElementById('rtp-json-editor').value = JSON.stringify(parsed, null, 4);
+                } catch (_) {
+                    document.getElementById('rtp-json-editor').value = setting.probability_json;
+                }
+            }
+        });
+    }
+
+    // 2. RTP JSON Config Form Submission
+    const rtpForm = document.getElementById('spin-rtp-admin-form');
+    if (rtpForm) {
+        rtpForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const tierId = parseInt(document.getElementById('rtp-tier-select').value);
+            const rawJson = document.getElementById('rtp-json-editor').value.trim();
+            
+            if (isNaN(tierId) || !rawJson) return;
+            
+            const btn = rtpForm.querySelector('button[type="submit"]');
+            btn.disabled = true;
+            btn.innerText = "Saving settings...";
+            
+            try {
+                // Double check JSON syntax on client
+                const parsed = JSON.parse(rawJson);
+                const sum = Object.values(parsed).reduce((a, b) => a + b, 0);
+                if (Math.abs(sum - 100) > 1.0) {
+                    throw new Error(`Total probability weights must sum to exactly 100%. (Current sum: ${sum}%)`);
+                }
+                
+                const response = await fetch(`${API_BASE}/admin/rtp/${tierId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        probability_json: JSON.stringify(parsed),
+                        enabled: true
+                    })
+                });
+                
+                if (!response.ok) {
+                    const errText = await response.text();
+                    throw new Error(errText || "Failed to save settings.");
+                }
+                
+                showToast("RTP configuration saved and live on production!");
+                loadSpinEngineData();
+            } catch (err) {
+                console.error(err);
+                showToast("RTP configuration error: " + err.message, true);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Save RTP Settings";
+            }
+        });
+    }
+
+    // 3. Maintenance Toggle Button
+    const btnToggleMaintenance = document.getElementById('btn-toggle-maintenance');
+    if (btnToggleMaintenance) {
+        btnToggleMaintenance.addEventListener('click', async () => {
+            const nextMode = !state.maintenance_active;
+            btnToggleMaintenance.disabled = true;
+            
+            try {
+                const res = await fetch(`${API_BASE}/admin/maintenance?enabled=${nextMode}`, {
+                    method: 'POST'
+                });
+                if (!res.ok) throw new Error("Failed to change maintenance status.");
+                
+                state.maintenance_active = nextMode;
+                btnToggleMaintenance.innerText = state.maintenance_active ? "Unlock Game Access" : "Lock Game Access";
+                btnToggleMaintenance.style.backgroundColor = state.maintenance_active ? 'var(--success)' : 'var(--error)';
+                showToast(state.maintenance_active ? "Spin Wheel has been LOCKED for maintenance." : "Spin Wheel unlocked! Game access is live.");
+            } catch (err) {
+                showToast("Maintenance toggle error: " + err.message, true);
+            } finally {
+                btnToggleMaintenance.disabled = false;
+            }
+        });
+    }
+});
+
 
 
 

@@ -83,3 +83,40 @@ class Referral(Base):
     referred_user_id = Column(Integer, ForeignKey("users.id"), unique=True, nullable=False)
     bonus_given = Column(Boolean, default=False)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+class Spin(Base):
+    __tablename__ = "spins"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    bet_amount = Column(Float, nullable=False)
+    multiplier = Column(Float, nullable=False)
+    win_amount = Column(Float, nullable=False)
+    result_type = Column(String, nullable=False)  # "WIN" or "LOSE"
+    wheel_segment = Column(String, nullable=False) # e.g. "1.5x", "Lose"
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    user = relationship("User")
+
+class RTPSettings(Base):
+    __tablename__ = "rtp_settings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    min_amount = Column(Float, nullable=False)
+    max_amount = Column(Float, nullable=False)
+    probability_json = Column(String, nullable=False)  # JSON representation of weights
+    enabled = Column(Boolean, default=True)
+
+class SpinAuditLog(Base):
+    __tablename__ = "spin_audit_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    request_payload = Column(String, nullable=False)
+    generated_result = Column(String, nullable=False)
+    ip_address = Column(String, nullable=True)
+    device_id = Column(String, nullable=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    user = relationship("User")
+

@@ -8,6 +8,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:target99/core/constants/api_constants.dart';
 import 'package:target99/core/models/contest_model.dart';
 import 'package:target99/core/models/user_model.dart';
+import 'package:target99/core/models/spin_model.dart';
 import 'package:target99/core/network/api_client.dart';
 
 // --- STATES ---
@@ -40,6 +41,12 @@ class AppState {
   final List<LeaderboardItemModel> activeLeaderboard;
   final bool isLeaderboardLoading;
 
+  // Spin Wheel Game
+  final bool isSpinLoading;
+  final SpinResultModel? latestSpinResult;
+  final List<SpinResultModel> spinHistory;
+  final String? spinError;
+
   AppState({
     this.isAuthLoading = false,
     this.isSplashLoading = false,
@@ -59,6 +66,10 @@ class AppState {
     this.referralError,
     this.activeLeaderboard = const [],
     this.isLeaderboardLoading = false,
+    this.isSpinLoading = false,
+    this.latestSpinResult,
+    this.spinHistory = const [],
+    this.spinError,
   });
 
   AppState copyWith({
@@ -80,6 +91,10 @@ class AppState {
     String? referralError,
     List<LeaderboardItemModel>? activeLeaderboard,
     bool? isLeaderboardLoading,
+    bool? isSpinLoading,
+    SpinResultModel? latestSpinResult,
+    List<SpinResultModel>? spinHistory,
+    String? spinError,
   }) {
     return AppState(
       isAuthLoading: isAuthLoading ?? this.isAuthLoading,
@@ -101,6 +116,10 @@ class AppState {
       referralError: referralError ?? this.referralError,
       activeLeaderboard: activeLeaderboard ?? this.activeLeaderboard,
       isLeaderboardLoading: isLeaderboardLoading ?? this.isLeaderboardLoading,
+      isSpinLoading: isSpinLoading ?? this.isSpinLoading,
+      latestSpinResult: latestSpinResult ?? this.latestSpinResult,
+      spinHistory: spinHistory ?? this.spinHistory,
+      spinError: spinError ?? this.spinError,
     );
   }
 }
@@ -193,6 +212,14 @@ class DisconnectLeaderboardEvent extends AppEvent {}
 
 class LogoutEvent extends AppEvent {}
 
+class PlaySpinWheelEvent extends AppEvent {
+  final double betAmount;
+  final String idempotencyKey;
+  PlaySpinWheelEvent(this.betAmount, this.idempotencyKey);
+}
+
+class FetchSpinHistoryEvent extends AppEvent {}
+
 class RegisterFcmTokenEvent extends AppEvent {
   final String fcmToken;
   RegisterFcmTokenEvent(this.fcmToken);
@@ -225,6 +252,8 @@ class AppBloc extends Bloc<AppEvent, AppState> {
     on<DisconnectLeaderboardEvent>(_onDisconnectLeaderboard);
     on<LogoutEvent>(_onLogout);
     on<RegisterFcmTokenEvent>(_onRegisterFcmToken);
+    on<PlaySpinWheelEvent>(_onPlaySpinWheel);
+    on<FetchSpinHistoryEvent>(_onFetchSpinHistory);
   }
 
   Future<void> _onSendOtp(SendOtpEvent event, Emitter<AppState> emit) async {
@@ -826,6 +855,58 @@ class AppBloc extends Bloc<AppEvent, AppState> {
           ),
         );
       }
+    }
+  }
+
+  Future<void> _onPlaySpinWheel(
+    PlaySpinWheelEvent event,
+    Emitter<AppState> emit,
+  ) async {
+    emit(state.copyWith(isSpinLoading: true, spinError: null, latestSpinResult: null));
+    try {
+      final response = await _apiClient.post(
+        ApiConstants.spinCreate,
+        data: {
+          'bet_amount': event.betAmount,
+          'idempotency_key': event.idempotencyKey,
+          'device_id': 'flutter_app_client',
+        },
+      );
+      final spinResult = SpinResultModel.fromJson(response.data);
+      emit(state.copyWith(
+        isSpinLoading: false,
+        latestSpinResult: spinResult,
+      ));
+      
+      // Auto-trigger profile reload so wallet balances are synchronized instantly!
+      add(LoadProfileEvent());
+    } catch (e) {
+      emit(state.copyWith(
+        isSpinLoading: false,
+        spinError: e.toString().replaceAll('Exception: ', ''),
+      ));
+    }
+  }
+
+  Future<void> _onFetchSpinHistory(
+    FetchSpinHistoryEvent event,
+    Emitter<AppState> emit,
+  ) async {
+    emit(state.copyWith(isSpinLoading: true, spinError: null));
+    try {
+      final response = await _apiClient.get(ApiConstants.spinHistory);
+      final list = (response.data as List)
+          .map((json) => SpinResultModel.fromJson(json))
+          .toList();
+      emit(state.copyWith(
+        isSpinLoading: false,
+        spinHistory: list,
+      ));
+    } catch (e) {
+      emit(state.copyWith(
+        isSpinLoading: false,
+        spinError: e.toString().replaceAll('Exception: ', ''),
+      ));
     }
   }
 

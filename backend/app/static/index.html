@@ -51,6 +51,10 @@
                     <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2" ry="2"/><line x1="12" y1="4" x2="12" y2="20"/><line x1="2" y1="12" x2="22" y2="12"/></svg>
                     Wallet Manager
                 </button>
+                <button class="menu-item" data-tab="spin-engine">
+                    <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2v20"/><path d="M2 12h20"/><circle cx="12" cy="12" r="4"/></svg>
+                    Spin Engine
+                </button>
             </nav>
 
             <div class="sidebar-footer">
@@ -393,6 +397,134 @@
 
                             <button type="submit" class="btn btn-primary btn-full">Submit Balance Update</button>
                         </form>
+                    </div>
+                </section>
+
+                <!-- 8. SPIN ENGINE TAB -->
+                <section class="tab-panel" id="panel-spin-engine">
+                    <!-- KPI Cards for Spin Engine -->
+                    <div class="kpi-grid">
+                        <div class="kpi-card">
+                            <div class="kpi-icon-wrapper blue">
+                                <svg class="kpi-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2v20"/><path d="M2 12h20"/></svg>
+                            </div>
+                            <div class="kpi-data">
+                                <span class="kpi-title">Total Bets Placed</span>
+                                <h3 class="kpi-value" id="spin-stat-bets">₹0.00</h3>
+                            </div>
+                        </div>
+
+                        <div class="kpi-card">
+                            <div class="kpi-icon-wrapper orange">
+                                <svg class="kpi-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                            </div>
+                            <div class="kpi-data">
+                                <span class="kpi-title">Winnings Returned</span>
+                                <h3 class="kpi-value" id="spin-stat-winnings">₹0.00</h3>
+                            </div>
+                        </div>
+
+                        <div class="kpi-card">
+                            <div class="kpi-icon-wrapper green">
+                                <svg class="kpi-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                            </div>
+                            <div class="kpi-data">
+                                <span class="kpi-title">House Net Profit</span>
+                                <h3 class="kpi-value" id="spin-stat-profit">₹0.00</h3>
+                            </div>
+                        </div>
+
+                        <div class="kpi-card">
+                            <div class="kpi-icon-wrapper purple">
+                                <svg class="kpi-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/></svg>
+                            </div>
+                            <div class="kpi-data">
+                                <span class="kpi-title">Payout Ratio (RTP)</span>
+                                <h3 class="kpi-value" id="spin-stat-rtp">0.00%</h3>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Config Panel & Maintenance -->
+                    <div class="dashboard-grid">
+                        <div class="card">
+                            <div class="card-header">
+                                <h2>RTP Percentage Configurator</h2>
+                            </div>
+                            <form id="spin-rtp-admin-form" class="contest-form" style="margin-top: 15px;">
+                                <div style="display: flex; gap: 15px; align-items: center; justify-content: space-between; margin-bottom: 20px; padding: 12px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 8px;">
+                                    <div>
+                                        <h4 style="margin: 0; font-size: 13px; font-weight: bold;">Spin Game Maintenance Lock</h4>
+                                        <p style="margin: 3px 0 0 0; font-size: 10px; color: var(--text-muted);">Enable to restrict wheel access for all players instantly.</p>
+                                    </div>
+                                    <button type="button" class="btn btn-secondary" id="btn-toggle-maintenance" style="padding: 6px 12px; font-size: 11px;">Enable Lockout</button>
+                                </div>
+
+                                <div class="form-group" style="margin-bottom: 15px;">
+                                    <label for="rtp-tier-select">RTP Bet Tier Range</label>
+                                    <select id="rtp-tier-select" class="form-control" style="width:100%; background:#1e293b; color:#fff; border:1px solid #334155; padding:8px; border-radius:6px; font-family:inherit; margin-top:5px;">
+                                        <option value="1">Small Bets (₹1 – ₹49)</option>
+                                        <option value="2">Medium Bets (₹50 – ₹100)</option>
+                                        <option value="3">High Bets (Above ₹100)</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group" style="margin-bottom: 15px;">
+                                    <label for="rtp-json-editor">Probability Weights (JSON format)</label>
+                                    <textarea id="rtp-json-editor" style="width:100%; height:140px; background:#1e293b; color:#51ff00; border:1px solid #334155; padding:10px; border-radius:6px; font-family: monospace; resize:none; font-size:12px; margin-top:5px; line-height: 1.5;"></textarea>
+                                    <span style="font-size: 9px; color: var(--text-muted); display: block; margin-top: 4px;">Make sure the sum of all percentages is exactly 100%. Supported keys: "Lose", "1x", "1.1x", "1.2x", "1.5x", "2x", "3x", "5x".</span>
+                                </div>
+
+                                <button type="submit" class="btn btn-primary btn-full">Save RTP Settings</button>
+                            </form>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-header">
+                                <h2>AI Suspicious User Monitor</h2>
+                                <span class="badge badge-error">Alert Engine</span>
+                            </div>
+                            <div class="table-wrapper" style="margin-top: 15px; max-height: 310px; overflow-y: auto;">
+                                <table class="data-table" style="font-size: 11px;">
+                                    <thead>
+                                        <tr>
+                                            <th>Account</th>
+                                            <th>Spins</th>
+                                            <th>Win Ratio</th>
+                                            <th>Total Profit</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="suspicious-spins-table-body">
+                                        <tr><td colspan="4" class="table-placeholder">No suspicious activity detected.</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Spin Logs Table -->
+                    <div class="card table-card" style="margin-top: 30px;">
+                        <div class="card-table-header">
+                            <h2>Live Casino Spin Activity Logs (Turnover & Rollout Audit)</h2>
+                        </div>
+                        <div class="table-wrapper">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Spin ID</th>
+                                        <th>User Mobile</th>
+                                        <th>Bet Placed</th>
+                                        <th>Multiplier Hit</th>
+                                        <th>Win Credited</th>
+                                        <th>Wheel Sector</th>
+                                        <th>Date & Time</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="spin-logs-table-body">
+                                    <tr><td colspan="7" class="table-placeholder">No spins logged yet.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </section>
             </div>

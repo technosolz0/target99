@@ -9,7 +9,7 @@ import os
 from app.core.config import settings
 from app.core.database import engine, Base, get_db
 from app.models import Contest
-from app.api import auth, contests, wallet, referral, admin
+from app.api import auth, contests, wallet, referral, admin, spin
 from app.websocket import manager
 
 # Create database tables
@@ -63,7 +63,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-from app.core.seeds import seed_test_users, DEFAULT_QUESTIONS
+from app.core.seeds import seed_test_users, seed_rtp_settings, DEFAULT_QUESTIONS
 import json
 
 # Seed initial mock contests on startup
@@ -73,6 +73,7 @@ def startup_event():
     try:
         # Seed test users
         seed_test_users(db)
+        seed_rtp_settings(db)
         
         if db.query(Contest).count() == 0:
             now = datetime.now()
@@ -129,6 +130,7 @@ app.include_router(auth.router, prefix=settings.API_V1_STR)
 app.include_router(contests.router, prefix=settings.API_V1_STR)
 app.include_router(wallet.router, prefix=settings.API_V1_STR)
 app.include_router(referral.router, prefix=settings.API_V1_STR)
+app.include_router(spin.router, prefix=settings.API_V1_STR)
 app.include_router(admin.router, prefix=settings.API_V1_STR)
 
 # Realtime Leaderboard WebSocket endpoint

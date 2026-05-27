@@ -9,6 +9,7 @@ import 'package:target99/core/network/api_client.dart';
 import 'package:target99/features/app_bloc.dart';
 import 'package:target99/features/auth/login_screen.dart';
 import 'package:target99/features/home/home_screen.dart';
+import 'package:target99/features/spin/spin_wheel_screen.dart';
 import 'package:target99/features/wallet/wallet_screen.dart';
 import 'package:target99/features/referral/referral_screen.dart';
 import 'package:target99/features/profile/profile_screen.dart';
@@ -271,6 +272,7 @@ class _MainNavigationLayoutState extends State<MainNavigationLayout> {
 
   final List<Widget> _screens = const [
     HomeScreen(),
+    SpinWheelScreen(),
     WalletScreen(),
     ReferralScreen(),
     ProfileScreen(),
@@ -294,6 +296,7 @@ class _MainNavigationLayoutState extends State<MainNavigationLayout> {
             // Log tab switch in Firebase Analytics
             final screenNames = [
               'HomeScreen',
+              'SpinWheelScreen',
               'WalletScreen',
               'ReferralScreen',
               'ProfileScreen',
@@ -304,10 +307,12 @@ class _MainNavigationLayoutState extends State<MainNavigationLayout> {
 
             // Fetch updates contextually on tab switch
             if (index == 1) {
-              context.read<AppBloc>().add(FetchTransactionsEvent());
+              context.read<AppBloc>().add(FetchSpinHistoryEvent());
             } else if (index == 2) {
-              context.read<AppBloc>().add(FetchReferralDetailsEvent());
+              context.read<AppBloc>().add(FetchTransactionsEvent());
             } else if (index == 3) {
+              context.read<AppBloc>().add(FetchReferralDetailsEvent());
+            } else if (index == 4) {
               context.read<AppBloc>().add(LoadProfileEvent());
             }
           },
@@ -322,6 +327,11 @@ class _MainNavigationLayoutState extends State<MainNavigationLayout> {
               icon: Icon(Icons.sports_esports_outlined),
               activeIcon: Icon(Icons.sports_esports),
               label: 'Lobbies',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.casino_outlined),
+              activeIcon: Icon(Icons.casino),
+              label: 'Spin Wheel',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.account_balance_wallet_outlined),

@@ -37,6 +37,9 @@ class ApiConstants {
   static const String transactions = '/wallet/transactions';
   static const String saveBankDetails = '/wallet/bank-details';
 
+  static const String spinCreate = '/spin/create';
+  static const String spinHistory = '/spin/history';
+
   static const String referralDetails = '/referral/details';
   static const String registerFcmToken = '/auth/fcm-token';
 }

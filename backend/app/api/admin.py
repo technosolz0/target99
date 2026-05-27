@@ -1,3 +1,4 @@
+from sqlalchemy import Integer
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -302,3 +303,142 @@ def update_contest_questions(id: int, questions: List[QuestionSchema], db: Sessi
     db.commit()
     db.refresh(contest)
     return contest
+
+
+from app.schemas import (
+    SpinStatsResponse, SpinLogAdminResponse, RTPSettingsResponse, 
+    RTPUpdateRequest, SuspiciousUserResponse
+)
+
+@router.get("/spin/stats", response_model=SpinStatsResponse)
+def get_spin_stats(db: Session = Depends(get_db)):
+    from app.models import Spin
+    total_spins = db.query(Spin).count()
+    total_bets = db.query(func.sum(Spin.bet_amount)).scalar() or 0.0
+    total_wins = db.query(func.sum(Spin.win_amount)).scalar() or 0.0
+    platform_net_profit = total_bets - total_wins
+    payout_ratio = (total_wins / total_bets) * 100 if total_bets > 0 else 0.0
+    
+    return SpinStatsResponse(
+        total_spins=total_spins,
+        total_winnings_paid=total_wins,
+        total_bet_amount=total_bets,
+        platform_net_profit=platform_net_profit,
+        payout_ratio=payout_ratio
+    )
+
+@router.get("/spin/logs", response_model=List[SpinLogAdminResponse])
+def get_spin_logs(db: Session = Depends(get_db)):
+    from app.models import Spin, User
+    results = (
+        db.query(Spin, User.phone)
+        .join(User, Spin.user_id == User.id)
+        .order_by(Spin.created_at.desc())
+        .limit(100)
+        .all()
+    )
+    logs = []
+    for spin, phone in results:
+        logs.append(
+            SpinLogAdminResponse(
+                id=spin.id,
+                user_id=spin.user_id,
+                user_phone=phone,
+                bet_amount=spin.bet_amount,
+                multiplier=spin.multiplier,
+                win_amount=spin.win_amount,
+                result_type=spin.result_type,
+                wheel_segment=spin.wheel_segment,
+                created_at=spin.created_at
+            )
+        )
+    return logs
+
+@router.get("/rtp", response_model=List[RTPSettingsResponse])
+def get_rtp_settings(db: Session = Depends(get_db)):
+    from app.models import RTPSettings
+    return db.query(RTPSettings).all()
+
+@router.put("/rtp/{id}", response_model=RTPSettingsResponse)
+def update_rtp_settings(id: int, request: RTPUpdateRequest, db: Session = Depends(get_db)):
+    from app.models import RTPSettings
+    import json
+    rtp = db.query(RTPSettings).filter(RTPSettings.id == id).first()
+    if not rtp:
+        raise HTTPException(status_code=404, detail="RTP tier settings not found")
+    
+    try:
+        # Validate JSON formatting
+        parsed = json.loads(request.probability_json)
+        # Verify sum of probabilities is 100% (within tolerance)
+        total_pct = sum(parsed.values())
+        if not (99.0 <= total_pct <= 101.0):
+            raise ValueError(f"Total probability sum must be 100% (got {total_pct}%)")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid probability weights JSON: {str(e)}")
+        
+    rtp.probability_json = request.probability_json
+    rtp.enabled = request.enabled
+    db.commit()
+    db.refresh(rtp)
+    return rtp
+
+@router.get("/suspicious-users", response_model=List[SuspiciousUserResponse])
+def get_suspicious_users(db: Session = Depends(get_db)):
+    from app.models import Spin, User
+    from sqlalchemy import func
+    
+    # Query aggregated stats grouped by user
+    aggregates = (
+        db.query(
+            Spin.user_id,
+            func.count(Spin.id).label("total_spins"),
+            func.sum(func.cast(Spin.result_type == "WIN", Integer)).label("win_count"),
+            func.sum(Spin.bet_amount).label("total_bet"),
+            func.sum(Spin.win_amount).label("total_win")
+        )
+        .group_by(Spin.user_id)
+        .all()
+    )
+    
+    suspicious = []
+    for row in aggregates:
+        total_spins = row.total_spins
+        win_count = row.win_count or 0
+        total_bet = row.total_bet or 0.0
+        total_win = row.total_win or 0.0
+        
+        win_ratio = (win_count / total_spins) * 100 if total_spins > 0 else 0.0
+        
+        # Criteria: Either win ratio > 65% on >= 5 spins, or net winnings profit > ₹1000
+        if (total_spins >= 5 and win_ratio > 65.0) or (total_win - total_bet > 1000.0):
+            user = db.query(User).filter(User.id == row.user_id).first()
+            if user:
+                suspicious.append(
+                    SuspiciousUserResponse(
+                        user_id=row.user_id,
+                        name=user.name,
+                        phone=user.phone,
+                        total_spins=total_spins,
+                        win_count=win_count,
+                        win_ratio=win_ratio,
+                        total_bet=total_bet,
+                        total_win=total_win
+                    )
+                )
+    
+    # Sort suspicious users by highest net profit first
+    suspicious.sort(key=lambda u: -(u.total_win - u.total_bet))
+    return suspicious
+
+@router.post("/maintenance")
+def toggle_spin_maintenance(enabled: bool):
+    from app.services import SpinGameService
+    SpinGameService.set_maintenance_mode(enabled)
+    return {"maintenance_mode": SpinGameService.is_maintenance_mode()}
+
+@router.get("/maintenance")
+def get_spin_maintenance():
+    from app.services import SpinGameService
+    return {"maintenance_mode": SpinGameService.is_maintenance_mode()}
+
