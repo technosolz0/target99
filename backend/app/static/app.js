@@ -151,6 +151,8 @@ function setupEventHandlers() {
 
             // Set start time to 30 mins in future
             const startTime = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+            // Set end time to 60 mins in future
+            const endTime = new Date(Date.now() + 60 * 60 * 1000).toISOString();
 
             try {
                 const response = await fetch(`${API_BASE}/admin/contests`, {
@@ -161,7 +163,8 @@ function setupEventHandlers() {
                         entry_fee: entryFee,
                         total_slots: totalSlots,
                         prize_pool: prizePool,
-                        start_time: startTime
+                        start_time: startTime,
+                        end_time: endTime
                     })
                 });
 
@@ -269,6 +272,9 @@ function setupEventHandlers() {
             const localOffset = new Date().getTimezoneOffset() * 60000; // in ms
             const localISOTime = new Date(Date.now() + 2 * 60 * 60 * 1000 - localOffset).toISOString().slice(0, 16);
             document.getElementById('m-start-time').value = localISOTime;
+            
+            const localEndISOTime = new Date(Date.now() + 3 * 60 * 60 * 1000 - localOffset).toISOString().slice(0, 16);
+            document.getElementById('m-end-time').value = localEndISOTime;
 
             // Open modal
             el.createContestModal.classList.add('show');
@@ -371,6 +377,7 @@ function setupEventHandlers() {
             const totalSlots = parseInt(document.getElementById('m-slots').value);
             const prizePool = parseFloat(document.getElementById('m-pool').value);
             const startTimeStr = document.getElementById('m-start-time').value;
+            const endTimeStr = document.getElementById('m-end-time').value;
 
             if (!title || isNaN(entryFee) || isNaN(totalSlots) || isNaN(prizePool) || !startTimeStr) {
                 showToast("Please fill all required fields correctly.", true);
@@ -378,6 +385,7 @@ function setupEventHandlers() {
             }
 
             const startTime = new Date(startTimeStr).toISOString();
+            const endTime = endTimeStr ? new Date(endTimeStr).toISOString() : null;
 
             // Collect prize rules
             const prizeRules = [];
@@ -436,6 +444,7 @@ function setupEventHandlers() {
                         total_slots: totalSlots,
                         prize_pool: prizePool,
                         start_time: startTime,
+                        end_time: endTime,
                         prize_rules: prizeRules.length > 0 ? prizeRules : null,
                         questions: questions.length > 0 ? questions : null
                     })
@@ -666,6 +675,7 @@ function renderContestsTable(contestsList) {
         if (c.status === 'COMPLETED') statusBadge = 'badge-info';
 
         const startTimeStr = new Date(c.start_time).toLocaleString();
+        const endTimeStr = c.end_time ? new Date(c.end_time).toLocaleString() : 'N/A';
 
         const actionBtn = c.status !== 'COMPLETED'
             ? `<button class="btn btn-action btn-unban" onclick="completeContest(${c.id})">Complete</button>`
@@ -738,7 +748,12 @@ function renderContestsTable(contestsList) {
                     <strong>₹${c.prize_pool.toFixed(2)}</strong>
                     ${rulesHtml}
                 </td>
-                <td>${startTimeStr}</td>
+                <td>
+                    <div style="font-size: 11px;">
+                        <div><strong>Start:</strong> ${startTimeStr}</div>
+                        <div><strong>End:</strong> ${endTimeStr}</div>
+                    </div>
+                </td>
                 <td><span class="badge ${statusBadge}">${c.status}</span></td>
                 <td>
                     <div style="display:flex; gap:8px;">

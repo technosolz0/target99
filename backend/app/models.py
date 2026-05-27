@@ -34,6 +34,10 @@ class User(Base):
     def joined_contest_ids(self):
         return [p.contest_id for p in self.participants]
 
+    @property
+    def completed_contest_ids(self):
+        return [p.contest_id for p in self.participants if p.completed]
+
 class Contest(Base):
     __tablename__ = "contests"
 
@@ -44,6 +48,7 @@ class Contest(Base):
     joined_slots = Column(Integer, default=0)
     prize_pool = Column(Float, nullable=False)
     start_time = Column(DateTime, nullable=False)
+    end_time = Column(DateTime, nullable=True)
     status = Column(String, default="UPCOMING")  # UPCOMING, ACTIVE, COMPLETED
     prize_rules = Column(String, nullable=True)  # JSON string of rank-wise rules
     questions = Column(String, nullable=True)  # JSON string of quiz questions
@@ -60,6 +65,7 @@ class ContestParticipant(Base):
     rank = Column(Integer, default=0)
     joined_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     quiz_questions = Column(String, nullable=True)  # JSON string array of generated question IDs
+    completed = Column(Boolean, default=False)
 
     user = relationship("User", back_populates="participants")
     contest = relationship("Contest", back_populates="participants")

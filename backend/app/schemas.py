@@ -40,6 +40,7 @@ class UserResponse(BaseModel):
     bank_account_holder_name: Optional[str] = None
     bank_name: Optional[str] = None
     joined_contest_ids: List[int] = []
+    completed_contest_ids: List[int] = []
 
     class Config:
         from_attributes = True
@@ -60,6 +61,7 @@ class ContestCreate(BaseModel):
     total_slots: int
     prize_pool: float
     start_time: datetime
+    end_time: Optional[datetime] = None
     prize_rules: Optional[List[PrizeRuleSchema]] = None
     questions: Optional[List[QuestionSchema]] = None
 
@@ -71,6 +73,7 @@ class ContestResponse(BaseModel):
     joined_slots: int
     prize_pool: float
     start_time: datetime
+    end_time: Optional[datetime] = None
     status: str
     prize_rules: Optional[List[PrizeRuleSchema]] = None
     questions: Optional[List[QuestionSchema]] = None

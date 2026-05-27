@@ -15,6 +15,7 @@ router = APIRouter(prefix="/contests", tags=["contests"])
 
 @router.get("", response_model=List[ContestResponse])
 def get_contests(db: Session = Depends(get_db)):
+    from app.services import ContestService
     # Auto start/complete contests based on time if we want to simulate state transitions
     now = datetime.now()
     contests = db.query(Contest).all()
@@ -24,6 +25,11 @@ def get_contests(db: Session = Depends(get_db)):
         if c.status == "UPCOMING" and c.start_time <= now:
             c.status = "ACTIVE"
             db.commit()
+            
+        if c.status == "ACTIVE" and c.end_time and c.end_time <= now:
+            # Auto complete contest and pay out winnings
+            ContestService.complete_contest(db, c.id)
+            db.refresh(c)
             
         # Detach from session to strip questions safely in-memory only (prevents sniffing)
         db.expunge(c)
@@ -149,16 +155,18 @@ def get_contest_questions(
             }
             questions = [questions_dict[qid] for qid in stored_question_ids if qid in questions_dict]
             
-            parsed_questions = []
-            for q in questions:
-                parsed_questions.append(
-                    QuestionSchema(
-                        text=q.text,
-                        options=json.loads(q.options),
-                        correct_answer_index=q.correct_answer_index
+            # Check if language matches requested lang
+            if questions and questions[0].language == lang:
+                parsed_questions = []
+                for q in questions:
+                    parsed_questions.append(
+                        QuestionSchema(
+                            text=q.text,
+                            options=json.loads(q.options),
+                            correct_answer_index=q.correct_answer_index
+                        )
                     )
-                )
-            return parsed_questions
+                return parsed_questions
         except Exception:
             # Fall back to regenerating if parsing fails
             pass
@@ -292,6 +300,7 @@ async def submit_score(
                 
     # Save the score
     participant.score = score_to_save
+    participant.completed = True
     db.commit()
     
     # Update in-memory leaderboard

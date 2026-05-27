@@ -128,6 +128,7 @@ def create_contest(request: ContestCreate, db: Session = Depends(get_db)):
         total_slots=request.total_slots,
         prize_pool=request.prize_pool,
         start_time=request.start_time,
+        end_time=request.end_time,
         joined_slots=0,
         status="UPCOMING",
         prize_rules=prize_rules_json,
@@ -260,80 +261,13 @@ def admin_send_all_notification(request: SendAllNotificationRequest, db: Session
 
 @router.post("/contests/{id}/complete")
 def complete_contest(id: int, db: Session = Depends(get_db)):
-    contest = db.query(Contest).filter(Contest.id == id).first()
-    if not contest:
-        raise HTTPException(status_code=404, detail="Contest not found")
-        
-    if contest.status == "COMPLETED":
-        raise HTTPException(status_code=400, detail="Contest is already completed")
-        
-    contest.status = "COMPLETED"
-    db.commit()
-    
-    # Query participants ordered by rank (which was already calculated when they submitted scores)
-    participants = (
-        db.query(ContestParticipant)
-        .filter(ContestParticipant.contest_id == id)
-        .order_by(ContestParticipant.rank.asc())
-        .all()
-    )
-    
-    if not participants:
-        return {"message": "Contest completed with 0 participants.", "payouts": 0}
-        
-    # Standard rank-based prize pool distribution
-    # Rank 1: 50%, Rank 2: 30%, Rank 3: 20%
-    payout_pcts = {1: 0.50, 2: 0.30, 3: 0.20}
-    
-    # Adjust percentages if fewer than 3 participants
-    if len(participants) == 1:
-        payout_pcts = {1: 1.0}
-    elif len(participants) == 2:
-        payout_pcts = {1: 0.60, 2: 0.40}
-        
-    # Check if custom prize rules exist
-    import json
-    rules = []
-    if contest.prize_rules:
-        try:
-            rules = json.loads(contest.prize_rules)
-        except Exception:
-            pass
-            
-    payouts_made = 0
-    for p in participants:
-        user = db.query(User).filter(User.id == p.user_id).first()
-        if not user:
-            continue
-            
-        payout_amount = 0.0
-        if rules:
-            for rule in rules:
-                min_r = rule.get("min_rank")
-                max_r = rule.get("max_rank")
-                prize = rule.get("prize", 0.0)
-                if min_r <= p.rank <= max_r:
-                    payout_amount = float(prize)
-                    break
-        else:
-            if p.rank in payout_pcts:
-                payout_amount = contest.prize_pool * payout_pcts[p.rank]
-                
-        if payout_amount > 0:
-            # Credit prize triggers standard winning notification inside WalletService.credit_prize
-            WalletService.credit_prize(db, user, payout_amount)
-            payouts_made += 1
-        else:
-            # Send runner-up / completion notification to other participants
-            send_push_to_user(
-                db,
-                user.id,
-                title="🏁 Contest Finished!",
-                body=f"Contest '{contest.title}' is completed. You finished at Rank {p.rank}. Better luck next time!"
-            )
-            
-    db.commit()
-    return {"message": f"Contest completed. {payouts_made} winners paid out.", "payouts": payouts_made}
+    from app.services import ContestService
+    res = ContestService.complete_contest(db, id)
+    if "error" in res:
+        raise HTTPException(status_code=404, detail=res["error"])
+    if res.get("message") == "Contest is already completed":
+        raise HTTPException(status_code=400, detail=res["message"])
+    return res
 
 @router.post("/contests/{id}/questions", response_model=ContestResponse)
 def update_contest_questions(id: int, questions: List[QuestionSchema], db: Session = Depends(get_db)):

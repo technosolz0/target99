@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:target99/core/models/user_model.dart';
@@ -294,6 +295,7 @@ class _HomeScreenState extends State<HomeScreen> {
     // Let's define it inside `lib/features/home/home_screen.dart` as a static Set for simplicity and 100% reliability.
 
     final isJoined = user?.joinedContestIds.contains(contest.id) ?? false;
+    final isCompleted = user?.completedContestIds.contains(contest.id) ?? false;
     final fillPercentage = contest.joinedSlots / contest.totalSlots;
 
     return Padding(
@@ -366,21 +368,25 @@ class _HomeScreenState extends State<HomeScreen> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      const Text(
-                        'START TIME',
-                        style: TextStyle(
+                      Text(
+                        contest.status == 'ACTIVE' && contest.endTime != null
+                            ? 'ENDS IN'
+                            : 'START TIME',
+                        style: const TextStyle(
                           fontSize: 8,
                           color: AppTheme.textMuted,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      Text(
-                        '${contest.startTime.hour}:${contest.startTime.minute.toString().padLeft(2, '0')}',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                      contest.status == 'ACTIVE' && contest.endTime != null
+                          ? ContestCountdown(endTime: contest.endTime!)
+                          : Text(
+                              '${contest.startTime.hour}:${contest.startTime.minute.toString().padLeft(2, '0')}',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                     ],
                   ),
                 ],
@@ -432,29 +438,40 @@ class _HomeScreenState extends State<HomeScreen> {
               Row(
                 children: [
                   Expanded(
-                    child: isJoined
+                    child: isCompleted
                         ? ElevatedButton(
-                            onPressed: () {
-                              _showLanguageSelectionSheet(context, contest);
-                            },
+                            onPressed: null,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: AppTheme.accentPurple,
+                              backgroundColor: Colors.white.withOpacity(0.05),
                             ),
                             child: const Text(
-                              'PLAY QUIZ NOW',
-                              style: TextStyle(color: Colors.white),
+                              'QUIZ COMPLETED',
+                              style: TextStyle(color: AppTheme.textMuted),
                             ),
                           )
-                        : ElevatedButton(
-                            onPressed: contest.isFull
-                                ? null
-                                : () {
-                                    _showJoinConfirmation(context, contest);
-                                  },
-                            child: Text(
-                              contest.isFull ? 'SLOTS FULL' : 'JOIN CONTEST',
-                            ),
-                          ),
+                        : isJoined
+                            ? ElevatedButton(
+                                onPressed: () {
+                                  _showLanguageSelectionSheet(context, contest);
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppTheme.accentPurple,
+                                ),
+                                child: const Text(
+                                  'PLAY QUIZ NOW',
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                              )
+                            : ElevatedButton(
+                                onPressed: contest.isFull
+                                    ? null
+                                    : () {
+                                        _showJoinConfirmation(context, contest);
+                                      },
+                                child: Text(
+                                  contest.isFull ? 'SLOTS FULL' : 'JOIN CONTEST',
+                                ),
+                              ),
                   ),
                 ],
               ),
@@ -470,6 +487,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: AppTheme.cardBg,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -478,113 +496,118 @@ class _HomeScreenState extends State<HomeScreen> {
         return StatefulBuilder(
           builder: (context, setModalState) {
             return SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Select Quiz Language',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.close, color: AppTheme.textMuted),
-                          onPressed: () => Navigator.pop(ctx),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    const Text(
-                      'Choose the language you prefer to play this contest in.',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppTheme.textMuted,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    
-                    _buildLanguageOptionCard(
-                      label: 'English',
-                      subLabel: 'Standard English',
-                      code: 'en',
-                      isSelected: selectedLanguage == 'en',
-                      onTap: () {
-                        setModalState(() {
-                          selectedLanguage = 'en';
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 10),
-                    _buildLanguageOptionCard(
-                      label: 'हिंदी',
-                      subLabel: 'Hindi language',
-                      code: 'hi',
-                      isSelected: selectedLanguage == 'hi',
-                      onTap: () {
-                        setModalState(() {
-                          selectedLanguage = 'hi';
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 10),
-                    _buildLanguageOptionCard(
-                      label: 'मराठी',
-                      subLabel: 'Marathi language',
-                      code: 'mr',
-                      isSelected: selectedLanguage == 'mr',
-                      onTap: () {
-                        setModalState(() {
-                          selectedLanguage = 'mr';
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 10),
-                    _buildLanguageOptionCard(
-                      label: 'ગુજરાતી',
-                      subLabel: 'Gujarati language',
-                      code: 'gu',
-                      isSelected: selectedLanguage == 'gu',
-                      onTap: () {
-                        setModalState(() {
-                          selectedLanguage = 'gu';
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 24),
-                    
-                    ElevatedButton(
-                      onPressed: () {
-                        Navigator.pop(ctx);
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => QuizScreen(
-                              contest: contest,
-                              language: selectedLanguage,
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Select Quiz Language',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
                             ),
                           ),
-                        ).then((_) {
-                          if (context.mounted) {
-                            context.read<AppBloc>().add(FetchContestsEvent());
-                            context.read<AppBloc>().add(LoadProfileEvent());
-                          }
-                        });
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.accentPurple,
-                        foregroundColor: Colors.white,
+                          IconButton(
+                            icon: const Icon(
+                              Icons.close,
+                              color: AppTheme.textMuted,
+                            ),
+                            onPressed: () => Navigator.pop(ctx),
+                          ),
+                        ],
                       ),
-                      child: const Text('START QUIZ NOW'),
-                    ),
-                  ],
+                      const SizedBox(height: 6),
+                      const Text(
+                        'Choose the language you prefer to play this contest in.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppTheme.textMuted,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      _buildLanguageOptionCard(
+                        label: 'English',
+                        subLabel: 'Standard English',
+                        code: 'en',
+                        isSelected: selectedLanguage == 'en',
+                        onTap: () {
+                          setModalState(() {
+                            selectedLanguage = 'en';
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 10),
+                      _buildLanguageOptionCard(
+                        label: 'हिंदी',
+                        subLabel: 'Hindi language',
+                        code: 'hi',
+                        isSelected: selectedLanguage == 'hi',
+                        onTap: () {
+                          setModalState(() {
+                            selectedLanguage = 'hi';
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 10),
+                      _buildLanguageOptionCard(
+                        label: 'मराठी',
+                        subLabel: 'Marathi language',
+                        code: 'mr',
+                        isSelected: selectedLanguage == 'mr',
+                        onTap: () {
+                          setModalState(() {
+                            selectedLanguage = 'mr';
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 10),
+                      _buildLanguageOptionCard(
+                        label: 'ગુજરાતી',
+                        subLabel: 'Gujarati language',
+                        code: 'gu',
+                        isSelected: selectedLanguage == 'gu',
+                        onTap: () {
+                          setModalState(() {
+                            selectedLanguage = 'gu';
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 24),
+
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => QuizScreen(
+                                contest: contest,
+                                language: selectedLanguage,
+                              ),
+                            ),
+                          ).then((_) {
+                            if (context.mounted) {
+                              context.read<AppBloc>().add(FetchContestsEvent());
+                              context.read<AppBloc>().add(LoadProfileEvent());
+                            }
+                          });
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.accentPurple,
+                          foregroundColor: Colors.white,
+                        ),
+                        child: const Text('START QUIZ NOW'),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             );
@@ -652,11 +675,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 color: isSelected ? AppTheme.accentCyan : Colors.transparent,
               ),
               child: isSelected
-                  ? const Icon(
-                      Icons.check,
-                      size: 12,
-                      color: Colors.black,
-                    )
+                  ? const Icon(Icons.check, size: 12, color: Colors.black)
                   : null,
             ),
           ],
@@ -680,191 +699,202 @@ class _HomeScreenState extends State<HomeScreen> {
 
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: AppTheme.cardBg,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (ctx) {
         return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Text(
-                  'Confirm Registration',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Joining: ${contest.title}',
-                  style: TextStyle(color: AppTheme.textMuted, fontSize: 13),
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text('Entry Fee', style: TextStyle(fontSize: 14)),
-                    Text(
-                      '₹${contest.entryFee.toStringAsFixed(2)}',
-                      style: const TextStyle(
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Text(
+                    'Confirm Registration',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Joining: ${contest.title}',
+                    style: TextStyle(color: AppTheme.textMuted, fontSize: 13),
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Entry Fee', style: TextStyle(fontSize: 14)),
+                      Text(
+                        '₹${contest.entryFee.toStringAsFixed(2)}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Fee will be deducted from your Wallet balances.\nBonus Wallet can pay up to 10% of the fee.',
+                    style: TextStyle(fontSize: 10, color: AppTheme.textMuted),
+                  ),
+                  if (contest.prizeRules != null &&
+                      contest.prizeRules!.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    const Divider(color: AppTheme.borderCol, height: 1),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'PRIZE BREAKDOWN',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: AppTheme.textMuted,
                         fontWeight: FontWeight.bold,
-                        fontSize: 14,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      constraints: const BoxConstraints(maxHeight: 100),
+                      child: SingleChildScrollView(
+                        child: Column(
+                          children: contest.prizeRules!.map((rule) {
+                            final rankText = rule.minRank == rule.maxRank
+                                ? 'Rank ${rule.minRank}'
+                                : 'Ranks ${rule.minRank}-${rule.maxRank}';
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 2.0,
+                              ),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    rankText,
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: AppTheme.textMuted,
+                                    ),
+                                  ),
+                                  Text(
+                                    '₹${rule.prize.toStringAsFixed(0)}',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppTheme.accentEmerald,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                        ),
                       ),
                     ),
                   ],
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Fee will be deducted from your Wallet balances.\nBonus Wallet can pay up to 10% of the fee.',
-                  style: TextStyle(fontSize: 10, color: AppTheme.textMuted),
-                ),
-                if (contest.prizeRules != null &&
-                    contest.prizeRules!.isNotEmpty) ...[
-                  const SizedBox(height: 16),
-                  const Divider(color: AppTheme.borderCol, height: 1),
-                  const SizedBox(height: 12),
-                  const Text(
-                    'PRIZE BREAKDOWN',
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: AppTheme.textMuted,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    constraints: const BoxConstraints(maxHeight: 100),
-                    child: SingleChildScrollView(
+                  const SizedBox(height: 20),
+                  if (!hasSufficientBalance) ...[
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppTheme.accentRed.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: AppTheme.accentRed.withOpacity(0.2),
+                        ),
+                      ),
                       child: Column(
-                        children: contest.prizeRules!.map((rule) {
-                          final rankText = rule.minRank == rule.maxRank
-                              ? 'Rank ${rule.minRank}'
-                              : 'Ranks ${rule.minRank}-${rule.maxRank}';
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 2.0),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  rankText,
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    color: AppTheme.textMuted,
-                                  ),
-                                ),
-                                Text(
-                                  '₹${rule.prize.toStringAsFixed(0)}',
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppTheme.accentEmerald,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 20),
-                if (!hasSufficientBalance) ...[
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: AppTheme.accentRed.withOpacity(0.08),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: AppTheme.accentRed.withOpacity(0.2),
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.warning_amber_rounded,
-                              color: AppTheme.accentRed,
-                              size: 16,
-                            ),
-                            const SizedBox(width: 8),
-                            const Text(
-                              'Insufficient Wallet Balance',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.warning_amber_rounded,
                                 color: AppTheme.accentRed,
-                                fontSize: 12,
+                                size: 16,
                               ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'Shortfall: ₹${shortfall.toStringAsFixed(2)}\nYour Usable Balance: ₹${(totalOthers + actualBonusToUse).toStringAsFixed(2)}',
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: AppTheme.textMuted,
+                              const SizedBox(width: 8),
+                              const Text(
+                                'Insufficient Wallet Balance',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: AppTheme.accentRed,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(ctx);
-
-                      final depositAmount = shortfall.ceilToDouble();
-
-                      RazorpayService.openRazorpayPaymentSheet(
-                        context: context,
-                        amount: depositAmount,
-                        onSuccess: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                'Deposited ₹${depositAmount.toInt()} successfully! Re-opening registration...',
-                              ),
-                              backgroundColor: AppTheme.accentEmerald,
+                          const SizedBox(height: 6),
+                          Text(
+                            'Shortfall: ₹${shortfall.toStringAsFixed(2)}\nYour Usable Balance: ₹${(totalOthers + actualBonusToUse).toStringAsFixed(2)}',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: AppTheme.textMuted,
                             ),
-                          );
-
-                          Future.delayed(const Duration(milliseconds: 600), () {
-                            if (context.mounted) {
-                              _showJoinConfirmation(context, contest);
-                            }
-                          });
-                        },
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.accentCyan,
-                      foregroundColor: Colors.black,
+                          ),
+                        ],
+                      ),
                     ),
-                    child: Text('ADD ₹${shortfall.ceil()} VIA RAZORPAY'),
-                  ),
-                ] else ...[
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(ctx);
-                      context.read<AppBloc>().add(JoinContestEvent(contest.id));
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Registered for ${contest.title}!'),
-                          backgroundColor: AppTheme.accentEmerald,
-                        ),
-                      );
-                    },
-                    child: const Text('CONFIRM & REGISTER'),
-                  ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(ctx);
+
+                        final depositAmount = shortfall.ceilToDouble();
+
+                        RazorpayService.openRazorpayPaymentSheet(
+                          context: context,
+                          amount: depositAmount,
+                          onSuccess: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Deposited ₹${depositAmount.toInt()} successfully! Re-opening registration...',
+                                ),
+                                backgroundColor: AppTheme.accentEmerald,
+                              ),
+                            );
+
+                            Future.delayed(
+                              const Duration(milliseconds: 600),
+                              () {
+                                if (context.mounted) {
+                                  _showJoinConfirmation(context, contest);
+                                }
+                              },
+                            );
+                          },
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.accentCyan,
+                        foregroundColor: Colors.black,
+                      ),
+                      child: Text('ADD ₹${shortfall.ceil()} VIA RAZORPAY'),
+                    ),
+                  ] else ...[
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        context.read<AppBloc>().add(
+                          JoinContestEvent(contest.id),
+                        );
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Registered for ${contest.title}!'),
+                            backgroundColor: AppTheme.accentEmerald,
+                          ),
+                        );
+                      },
+                      child: const Text('CONFIRM & REGISTER'),
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         );
@@ -872,3 +902,71 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
+
+class ContestCountdown extends StatefulWidget {
+  final DateTime endTime;
+  const ContestCountdown({super.key, required this.endTime});
+
+  @override
+  State<ContestCountdown> createState() => _ContestCountdownState();
+}
+
+class _ContestCountdownState extends State<ContestCountdown> {
+  late Timer _timer;
+  late Duration _difference;
+
+  @override
+  void initState() {
+    super.initState();
+    _calculateDifference();
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (mounted) {
+        setState(() {
+          _calculateDifference();
+        });
+      }
+    });
+  }
+
+  void _calculateDifference() {
+    _difference = widget.endTime.difference(DateTime.now());
+  }
+
+  @override
+  void dispose() {
+    _timer.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_difference.isNegative) {
+      return const Text(
+        'ENDED',
+        style: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.bold,
+          color: AppTheme.accentRed,
+        ),
+      );
+    }
+
+    final hours = _difference.inHours.toString().padLeft(2, '0');
+    final minutes = (_difference.inMinutes % 60).toString().padLeft(2, '0');
+    final seconds = (_difference.inSeconds % 60).toString().padLeft(2, '0');
+
+    final displayStr = _difference.inHours > 0
+        ? '$hours:$minutes:$seconds'
+        : '$minutes:$seconds';
+
+    return Text(
+      displayStr,
+      style: const TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.bold,
+        color: AppTheme.accentCyan,
+      ),
+    );
+  }
+}
+

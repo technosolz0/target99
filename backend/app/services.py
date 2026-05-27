@@ -458,3 +458,81 @@ class SpinGameService:
 
         return spin
 
+
+class ContestService:
+    @staticmethod
+    def complete_contest(db: Session, contest_id: int) -> dict:
+        import json
+        from app.models import Contest, ContestParticipant, User
+        from app.services import WalletService
+        from app.core.notifications import send_push_to_user
+
+        contest = db.query(Contest).filter(Contest.id == contest_id).first()
+        if not contest:
+            return {"error": "Contest not found"}
+            
+        if contest.status == "COMPLETED":
+            return {"message": "Contest is already completed", "payouts": 0}
+            
+        contest.status = "COMPLETED"
+        db.commit()
+        
+        # Query participants ordered by rank
+        participants = (
+            db.query(ContestParticipant)
+            .filter(ContestParticipant.contest_id == contest_id)
+            .order_by(ContestParticipant.rank.asc())
+            .all()
+        )
+        
+        if not participants:
+            return {"message": "Contest completed with 0 participants.", "payouts": 0}
+            
+        # Standard rank-based prize pool distribution
+        payout_pcts = {1: 0.50, 2: 0.30, 3: 0.20}
+        if len(participants) == 1:
+            payout_pcts = {1: 1.0}
+        elif len(participants) == 2:
+            payout_pcts = {1: 0.60, 2: 0.40}
+            
+        rules = []
+        if contest.prize_rules:
+            try:
+                rules = json.loads(contest.prize_rules)
+            except Exception:
+                pass
+                
+        payouts_made = 0
+        for p in participants:
+            user = db.query(User).filter(User.id == p.user_id).first()
+            if not user:
+                continue
+                
+            payout_amount = 0.0
+            if rules:
+                for rule in rules:
+                    min_r = rule.get("min_rank")
+                    max_r = rule.get("max_rank")
+                    prize = rule.get("prize", 0.0)
+                    if min_r <= p.rank <= max_r:
+                        payout_amount = float(prize)
+                        break
+            else:
+                if p.rank in payout_pcts:
+                    payout_amount = contest.prize_pool * payout_pcts[p.rank]
+                    
+            if payout_amount > 0:
+                WalletService.credit_prize(db, user, payout_amount)
+                payouts_made += 1
+            else:
+                send_push_to_user(
+                    db,
+                    user.id,
+                    title="🏁 Contest Finished!",
+                    body=f"Contest '{contest.title}' is completed. You finished at Rank {p.rank}. Better luck next time!"
+                )
+                
+        db.commit()
+        return {"message": f"Contest completed. {payouts_made} winners paid out.", "payouts": payouts_made}
+
+

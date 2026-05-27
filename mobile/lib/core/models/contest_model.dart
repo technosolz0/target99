@@ -65,6 +65,7 @@ class ContestModel {
   final String status;
   final List<PrizeRuleModel>? prizeRules;
   final List<QuizQuestionModel>? questions;
+  final DateTime? endTime;
 
   ContestModel({
     required this.id,
@@ -77,6 +78,7 @@ class ContestModel {
     required this.status,
     this.prizeRules,
     this.questions,
+    this.endTime,
   });
 
   factory ContestModel.fromJson(Map<String, dynamic> json) {
@@ -99,6 +101,9 @@ class ContestModel {
               .map((item) => QuizQuestionModel.fromJson(item as Map<String, dynamic>))
               .toList()
           : null,
+      endTime: json['end_time'] != null
+          ? DateTime.parse(json['end_time'] as String)
+          : null,
     );
   }
 
@@ -114,6 +119,7 @@ class ContestModel {
       'status': status,
       'prize_rules': prizeRules?.map((r) => r.toJson()).toList(),
       'questions': questions?.map((q) => q.toJson()).toList(),
+      'end_time': endTime?.toIso8601String(),
     };
   }
 

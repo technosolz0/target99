@@ -38,6 +38,7 @@ def migrate_database():
     columns_contests = [
         ("prize_rules", "TEXT"),
         ("questions", "TEXT"),
+        ("end_time", "TIMESTAMP"),
     ]
     for col_name, col_type in columns_contests:
         try:
@@ -50,6 +51,7 @@ def migrate_database():
 
     columns_participants = [
         ("quiz_questions", "TEXT"),
+        ("completed", "BOOLEAN DEFAULT 0"),
     ]
     for col_name, col_type in columns_participants:
         try:
@@ -140,6 +142,7 @@ def startup_event():
                     joined_slots=0,
                     prize_pool=30000.0,
                     start_time=now + timedelta(hours=2),
+                    end_time=now + timedelta(hours=3),
                     status="UPCOMING",
                     questions=default_questions_json
                 ),
@@ -150,6 +153,7 @@ def startup_event():
                     joined_slots=0,
                     prize_pool=5000.0,
                     start_time=now + timedelta(minutes=30),
+                    end_time=now + timedelta(minutes=45),
                     status="UPCOMING",
                     questions=default_questions_json
                 ),
@@ -160,6 +164,7 @@ def startup_event():
                     joined_slots=0,
                     prize_pool=100.0,
                     start_time=now + timedelta(minutes=5),
+                    end_time=now + timedelta(minutes=10),
                     status="UPCOMING",
                     questions=default_questions_json
                 ),
@@ -170,6 +175,7 @@ def startup_event():
                     joined_slots=0,
                     prize_pool=10000.0,
                     start_time=now + timedelta(days=1),
+                    end_time=now + timedelta(days=1, hours=2),
                     status="UPCOMING",
                     questions=default_questions_json
                 )
