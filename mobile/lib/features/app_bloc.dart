@@ -698,10 +698,7 @@ class AppBloc extends Bloc<AppEvent, AppState> {
     try {
       await _apiClient.post(
         ApiConstants.deposit,
-        data: {
-          'amount': event.amount,
-          if (event.utr != null) 'utr': event.utr,
-        },
+        data: {'amount': event.amount, if (event.utr != null) 'utr': event.utr},
       );
       add(LoadProfileEvent());
       add(FetchTransactionsEvent());
@@ -1024,35 +1021,37 @@ class AppBloc extends Bloc<AppEvent, AppState> {
   }
 
   void _onResetSpin(ResetSpinEvent event, Emitter<AppState> emit) {
-    emit(AppState(
-      isAuthLoading: state.isAuthLoading,
-      isSplashLoading: state.isSplashLoading,
-      currentUser: state.currentUser,
-      token: state.token,
-      authError: state.authError,
-      otpSentMessage: state.otpSentMessage,
-      showRegistrationFields: state.showRegistrationFields,
-      isContestsLoading: state.isContestsLoading,
-      contests: state.contests,
-      contestsError: state.contestsError,
-      isWalletLoading: state.isWalletLoading,
-      transactions: state.transactions,
-      walletError: state.walletError,
-      isReferralLoading: state.isReferralLoading,
-      referralDetails: state.referralDetails,
-      referralError: state.referralError,
-      activeLeaderboard: state.activeLeaderboard,
-      isLeaderboardLoading: state.isLeaderboardLoading,
-      isSpinLoading: state.isSpinLoading,
-      latestSpinResult: null,
-      spinHistory: state.spinHistory,
-      spinError: null,
-      updateRequired: state.updateRequired,
-      updateOptional: state.updateOptional,
-      updateUrl: state.updateUrl,
-      serverMinVersion: state.serverMinVersion,
-      serverLatestVersion: state.serverLatestVersion,
-    ));
+    emit(
+      AppState(
+        isAuthLoading: state.isAuthLoading,
+        isSplashLoading: state.isSplashLoading,
+        currentUser: state.currentUser,
+        token: state.token,
+        authError: state.authError,
+        otpSentMessage: state.otpSentMessage,
+        showRegistrationFields: state.showRegistrationFields,
+        isContestsLoading: state.isContestsLoading,
+        contests: state.contests,
+        contestsError: state.contestsError,
+        isWalletLoading: state.isWalletLoading,
+        transactions: state.transactions,
+        walletError: state.walletError,
+        isReferralLoading: state.isReferralLoading,
+        referralDetails: state.referralDetails,
+        referralError: state.referralError,
+        activeLeaderboard: state.activeLeaderboard,
+        isLeaderboardLoading: state.isLeaderboardLoading,
+        isSpinLoading: state.isSpinLoading,
+        latestSpinResult: null,
+        spinHistory: state.spinHistory,
+        spinError: null,
+        updateRequired: state.updateRequired,
+        updateOptional: state.updateOptional,
+        updateUrl: state.updateUrl,
+        serverMinVersion: state.serverMinVersion,
+        serverLatestVersion: state.serverLatestVersion,
+      ),
+    );
   }
 
   @override
