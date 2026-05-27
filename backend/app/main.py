@@ -47,6 +47,18 @@ def migrate_database():
             # Ignore error (column already exists)
             pass
 
+    columns_transactions = [
+        ("utr", "VARCHAR UNIQUE"),
+    ]
+    for col_name, col_type in columns_transactions:
+        try:
+            with engine.begin() as conn:
+                conn.execute(text(f"ALTER TABLE wallet_transactions ADD COLUMN {col_name} {col_type}"))
+            print(f"Schema Migration: Added column '{col_name}' to wallet_transactions table.")
+        except Exception:
+            # Ignore error (column already exists)
+            pass
+
 migrate_database()
 
 app = FastAPI(

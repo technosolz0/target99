@@ -19,8 +19,41 @@ def add_money(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    # Mocking successful payment gateway callback (e.g. Razorpay/Cashfree)
-    WalletService.process_deposit(db, current_user, request.amount)
+    if request.utr:
+        # Validate 12-digit numeric UTR
+        utr_str = request.utr.strip()
+        if len(utr_str) != 12 or not utr_str.isdigit():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Please enter a valid 12-digit UTR/Reference ID."
+            )
+            
+        # Check for duplicate UTR to prevent double-spending fraud
+        existing_tx = (
+            db.query(WalletTransaction)
+            .filter(WalletTransaction.utr == utr_str)
+            .first()
+        )
+        if existing_tx:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="This UTR / Transaction ID has already been submitted."
+            )
+            
+        # Create a pending manual deposit transaction
+        transaction = WalletTransaction(
+            user_id=current_user.id,
+            type="DEPOSIT",
+            amount=request.amount,
+            status="PENDING",
+            utr=utr_str
+        )
+        db.add(transaction)
+        db.commit()
+    else:
+        # Default mock instant success route for gateway/testing if UTR is not supplied
+        WalletService.process_deposit(db, current_user, request.amount)
+        
     db.refresh(current_user)
     return current_user
 

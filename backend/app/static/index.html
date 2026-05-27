@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,10 +8,12 @@
     <!-- Google Fonts Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
     <!-- Main Style Sheet -->
     <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
     <div class="app-container">
         <!-- Sidebar Navigation -->
@@ -21,38 +24,67 @@
                 </div>
                 <div class="logo-sub">ADMIN PORTAL</div>
             </div>
-            
+
             <nav class="sidebar-menu">
                 <button class="menu-item active" data-tab="overview">
-                    <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+                    <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="7" height="9" />
+                        <rect x="14" y="3" width="7" height="5" />
+                        <rect x="14" y="12" width="7" height="9" />
+                        <rect x="3" y="16" width="7" height="5" />
+                    </svg>
                     Overview
                 </button>
                 <button class="menu-item" data-tab="users">
-                    <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                        <circle cx="9" cy="7" r="4" />
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                    </svg>
                     User Management
                 </button>
                 <button class="menu-item" data-tab="contests">
-                    <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                    <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                    </svg>
                     Contest Engine
                 </button>
                 <button class="menu-item" data-tab="withdrawals">
-                    <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                    <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="1" x2="12" y2="23" />
+                        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                    </svg>
                     Transactions Log
                 </button>
                 <button class="menu-item" data-tab="notifications">
-                    <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                    <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                        <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                    </svg>
                     Push Notifications
                 </button>
                 <button class="menu-item" data-tab="quiz-manager">
-                    <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                    <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                    </svg>
                     Quiz Manager
                 </button>
                 <button class="menu-item" data-tab="wallet-manager">
-                    <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2" ry="2"/><line x1="12" y1="4" x2="12" y2="20"/><line x1="2" y1="12" x2="22" y2="12"/></svg>
+                    <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="2" y="4" width="20" height="16" rx="2" ry="2" />
+                        <line x1="12" y1="4" x2="12" y2="20" />
+                        <line x1="2" y1="12" x2="22" y2="12" />
+                    </svg>
                     Wallet Manager
                 </button>
                 <button class="menu-item" data-tab="spin-engine">
-                    <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2v20"/><path d="M2 12h20"/><circle cx="12" cy="12" r="4"/></svg>
+                    <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="M12 2v20" />
+                        <path d="M2 12h20" />
+                        <circle cx="12" cy="12" r="4" />
+                    </svg>
                     Spin Engine
                 </button>
             </nav>
@@ -77,7 +109,10 @@
                     <p id="page-subtitle" class="subtitle">Real-time statistics & business metrics</p>
                 </div>
                 <button class="btn btn-secondary btn-icon" id="btn-refresh">
-                    <svg class="btn-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                    <svg class="btn-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="23 4 23 10 17 10" />
+                        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+                    </svg>
                     Sync Data
                 </button>
             </header>
@@ -89,7 +124,11 @@
                     <div class="kpi-grid">
                         <div class="kpi-card">
                             <div class="kpi-icon-wrapper blue">
-                                <svg class="kpi-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                                <svg class="kpi-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                                    <circle cx="9" cy="7" r="4" />
+                                </svg>
                             </div>
                             <div class="kpi-data">
                                 <span class="kpi-title">Total Users</span>
@@ -99,7 +138,11 @@
 
                         <div class="kpi-card">
                             <div class="kpi-icon-wrapper green">
-                                <svg class="kpi-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                                <svg class="kpi-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <line x1="12" y1="1" x2="12" y2="23" />
+                                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                                </svg>
                             </div>
                             <div class="kpi-data">
                                 <span class="kpi-title">Total Deposits</span>
@@ -109,7 +152,11 @@
 
                         <div class="kpi-card">
                             <div class="kpi-icon-wrapper purple">
-                                <svg class="kpi-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                <svg class="kpi-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <circle cx="12" cy="12" r="10" />
+                                    <polyline points="12 6 12 12 16 14" />
+                                </svg>
                             </div>
                             <div class="kpi-data">
                                 <span class="kpi-title">Active Contests</span>
@@ -119,7 +166,11 @@
 
                         <div class="kpi-card">
                             <div class="kpi-icon-wrapper orange">
-                                <svg class="kpi-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                                <svg class="kpi-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <polygon
+                                        points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                                </svg>
                             </div>
                             <div class="kpi-data">
                                 <span class="kpi-title">Winnings Paid</span>
@@ -137,7 +188,8 @@
                             </div>
                             <div class="revenue-display">
                                 <h1 class="revenue-value" id="stat-revenue">₹0.00</h1>
-                                <p class="revenue-description">Calculated as: Entry Fees Collected - Prize Winnings Paid. (Average margin 15–35%)</p>
+                                <p class="revenue-description">Calculated as: Entry Fees Collected - Prize Winnings
+                                    Paid. (Average margin 15–35%)</p>
                             </div>
                         </div>
 
@@ -192,7 +244,9 @@
                                     </tr>
                                 </thead>
                                 <tbody id="users-table-body">
-                                    <tr><td colspan="6" class="table-placeholder">Loading users data...</td></tr>
+                                    <tr>
+                                        <td colspan="6" class="table-placeholder">Loading users data...</td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -223,7 +277,9 @@
                                     </tr>
                                 </thead>
                                 <tbody id="contests-table-body">
-                                    <tr><td colspan="7" class="table-placeholder">Loading contest lobbies...</td></tr>
+                                    <tr>
+                                        <td colspan="7" class="table-placeholder">Loading contest lobbies...</td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -232,6 +288,32 @@
 
                 <!-- 4. WITHDRAWALS TAB -->
                 <section class="tab-panel" id="panel-withdrawals">
+                    <div class="card table-card" style="margin-bottom: 30px;">
+                        <div class="card-table-header">
+                            <h2>Pending Manual Deposit Approvals</h2>
+                        </div>
+                        <div class="table-wrapper">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Tx ID</th>
+                                        <th>User Details</th>
+                                        <th>Amount</th>
+                                        <th>UTR / Transaction ID</th>
+                                        <th>Date Submitted</th>
+                                        <th>Approvals</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="deposits-table-body">
+                                    <tr>
+                                        <td colspan="6" class="table-placeholder">Loading manual deposit requests...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
                     <div class="card table-card">
                         <div class="card-table-header">
                             <h2>Pending Withdrawal Approvals</h2>
@@ -249,7 +331,9 @@
                                     </tr>
                                 </thead>
                                 <tbody id="withdrawals-table-body">
-                                    <tr><td colspan="6" class="table-placeholder">Loading withdrawal requests...</td></tr>
+                                    <tr>
+                                        <td colspan="6" class="table-placeholder">Loading withdrawal requests...</td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -271,7 +355,9 @@
                                     </tr>
                                 </thead>
                                 <tbody id="transactions-table-body">
-                                    <tr><td colspan="6" class="table-placeholder">Loading transactions log...</td></tr>
+                                    <tr>
+                                        <td colspan="6" class="table-placeholder">Loading transactions log...</td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -287,22 +373,27 @@
                             </div>
                             <div class="form-group" style="margin-bottom: 15px;">
                                 <label for="push-recipient-type">Recipient Type</label>
-                                <select id="push-recipient-type" class="form-control" style="width:100%; background:#1e293b; color:#fff; border:1px solid #334155; padding:8px; border-radius:6px; font-family:inherit;">
+                                <select id="push-recipient-type" class="form-control"
+                                    style="width:100%; background:#1e293b; color:#fff; border:1px solid #334155; padding:8px; border-radius:6px; font-family:inherit;">
                                     <option value="all">Broadcast to All Users</option>
                                     <option value="user">Specific User</option>
                                 </select>
                             </div>
-                            <div class="form-group id-field" id="push-user-id-group" style="display:none; margin-bottom: 15px;">
+                            <div class="form-group id-field" id="push-user-id-group"
+                                style="display:none; margin-bottom: 15px;">
                                 <label for="push-user-id">Recipient User ID</label>
-                                <input type="number" id="push-user-id" placeholder="e.g. 1" style="width:100%; background:#1e293b; color:#fff; border:1px solid #334155; padding:8px; border-radius:6px; font-family:inherit;">
+                                <input type="number" id="push-user-id" placeholder="e.g. 1"
+                                    style="width:100%; background:#1e293b; color:#fff; border:1px solid #334155; padding:8px; border-radius:6px; font-family:inherit;">
                             </div>
                             <div class="form-group" style="margin-bottom: 15px;">
                                 <label for="push-title">Notification Title</label>
-                                <input type="text" id="push-title" placeholder="e.g. 🎁 Weekend Special Bonus!" style="width:100%; background:#1e293b; color:#fff; border:1px solid #334155; padding:8px; border-radius:6px; font-family:inherit;">
+                                <input type="text" id="push-title" placeholder="e.g. 🎁 Weekend Special Bonus!"
+                                    style="width:100%; background:#1e293b; color:#fff; border:1px solid #334155; padding:8px; border-radius:6px; font-family:inherit;">
                             </div>
                             <div class="form-group" style="margin-bottom: 15px;">
                                 <label for="push-body">Message Body</label>
-                                <textarea id="push-body" placeholder="Type your message here..." style="width:100%; height:80px; background:#1e293b; color:#fff; border:1px solid #334155; padding:8px; border-radius:6px; resize:none; font-family:inherit;"></textarea>
+                                <textarea id="push-body" placeholder="Type your message here..."
+                                    style="width:100%; height:80px; background:#1e293b; color:#fff; border:1px solid #334155; padding:8px; border-radius:6px; resize:none; font-family:inherit;"></textarea>
                             </div>
                             <button class="btn btn-primary btn-full" id="btn-send-push">Send Notification</button>
                         </div>
@@ -311,9 +402,13 @@
                                 <h2>Notification System Info</h2>
                             </div>
                             <div style="font-size:14px; line-height:1.6; color:#94a3b8;">
-                                <p style="margin-bottom: 10px;">This panel communicates directly with Firebase Cloud Messaging (FCM).</p>
-                                <p style="margin-bottom: 10px;">If no service account credential is loaded on the backend, it runs in <strong>MOCK Mode</strong>. Messages will print directly to the backend stdout console for developers to inspect.</p>
-                                <p style="margin-bottom: 10px;">To target a specific user, find their User ID in the <strong>User Management</strong> tab.</p>
+                                <p style="margin-bottom: 10px;">This panel communicates directly with Firebase Cloud
+                                    Messaging (FCM).</p>
+                                <p style="margin-bottom: 10px;">If no service account credential is loaded on the
+                                    backend, it runs in <strong>MOCK Mode</strong>. Messages will print directly to the
+                                    backend stdout console for developers to inspect.</p>
+                                <p style="margin-bottom: 10px;">To target a specific user, find their User ID in the
+                                    <strong>User Management</strong> tab.</p>
                             </div>
                         </div>
                     </div>
@@ -327,22 +422,29 @@
                         </div>
                         <div style="margin-bottom: 20px;">
                             <label for="qm-contest-select">Select Contest</label>
-                            <select id="qm-contest-select" class="form-control" style="width:100%; max-width: 400px; background:#1e293b; color:#fff; border:1px solid #334155; padding:8px; border-radius:6px; font-family:inherit; margin-top: 5px;">
+                            <select id="qm-contest-select" class="form-control"
+                                style="width:100%; max-width: 400px; background:#1e293b; color:#fff; border:1px solid #334155; padding:8px; border-radius:6px; font-family:inherit; margin-top: 5px;">
                                 <option value="">-- Choose a Contest --</option>
                             </select>
                         </div>
 
                         <div id="qm-questions-section" style="display: none;">
-                            <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                                <h3 style="font-size: 13px; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px;">Questions List</h3>
-                                <button type="button" class="btn btn-secondary" id="btn-qm-add-question" style="padding: 6px 12px; font-size: 12px;">
+                            <div class="section-header"
+                                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                                <h3
+                                    style="font-size: 13px; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px;">
+                                    Questions List</h3>
+                                <button type="button" class="btn btn-secondary" id="btn-qm-add-question"
+                                    style="padding: 6px 12px; font-size: 12px;">
                                     + Add Question
                                 </button>
                             </div>
-                            <div id="qm-questions-list" style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 20px;">
+                            <div id="qm-questions-list"
+                                style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 20px;">
                                 <!-- Dynamic questions list will be loaded/added here -->
                             </div>
-                            <button type="button" class="btn btn-primary" id="btn-qm-save-questions" style="padding: 10px 20px; font-size: 13px;">Save All Questions</button>
+                            <button type="button" class="btn btn-primary" id="btn-qm-save-questions"
+                                style="padding: 10px 20px; font-size: 13px;">Save All Questions</button>
                         </div>
                     </div>
                 </section>
@@ -356,14 +458,19 @@
                         <form id="wm-adjust-balance-form" class="contest-form">
                             <div class="form-group" style="margin-bottom: 15px;">
                                 <label for="wm-user-select">Select User Account</label>
-                                <select id="wm-user-select" class="form-control" style="width:100%; background:#1e293b; color:#fff; border:1px solid #334155; padding:8px; border-radius:6px; font-family:inherit; margin-top: 5px;" required>
+                                <select id="wm-user-select" class="form-control"
+                                    style="width:100%; background:#1e293b; color:#fff; border:1px solid #334155; padding:8px; border-radius:6px; font-family:inherit; margin-top: 5px;"
+                                    required>
                                     <option value="">-- Choose User --</option>
                                 </select>
                             </div>
 
                             <!-- Selected User Balances Summary -->
-                            <div id="wm-user-balances" style="display: none; margin-bottom: 20px; padding: 15px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 10px;">
-                                <h3 style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 10px;">Current Balances</h3>
+                            <div id="wm-user-balances"
+                                style="display: none; margin-bottom: 20px; padding: 15px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 10px;">
+                                <h3
+                                    style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 10px;">
+                                    Current Balances</h3>
                                 <div class="balance-grid" style="display: flex; gap: 20px;">
                                     <div class="bal-item">
                                         <div class="bal-lbl">Deposit Wallet</div>
@@ -382,7 +489,8 @@
 
                             <div class="form-group" style="margin-bottom: 15px;">
                                 <label for="wm-wallet-type">Select Target Wallet</label>
-                                <select id="wm-wallet-type" class="form-control" style="width:100%; background:#1e293b; color:#fff; border:1px solid #334155; padding:8px; border-radius:6px; font-family:inherit; margin-top: 5px;">
+                                <select id="wm-wallet-type" class="form-control"
+                                    style="width:100%; background:#1e293b; color:#fff; border:1px solid #334155; padding:8px; border-radius:6px; font-family:inherit; margin-top: 5px;">
                                     <option value="deposit">Deposit Wallet</option>
                                     <option value="winning">Winning Wallet</option>
                                     <option value="bonus">Bonus Wallet</option>
@@ -391,8 +499,12 @@
 
                             <div class="form-group" style="margin-bottom: 20px;">
                                 <label for="wm-amount">Amount (₹)</label>
-                                <input type="number" id="wm-amount" placeholder="e.g. 100" min="-100000" max="100000" step="any" required style="width:100%; background:#1e293b; color:#fff; border:1px solid #334155; padding:8px; border-radius:6px; font-family:inherit; margin-top: 5px;">
-                                <span style="font-size: 10px; color: var(--text-muted); margin-top: 4px; display: block;">Enter a positive number to add funds, or a negative number to subtract funds.</span>
+                                <input type="number" id="wm-amount" placeholder="e.g. 100" min="-100000" max="100000"
+                                    step="any" required
+                                    style="width:100%; background:#1e293b; color:#fff; border:1px solid #334155; padding:8px; border-radius:6px; font-family:inherit; margin-top: 5px;">
+                                <span
+                                    style="font-size: 10px; color: var(--text-muted); margin-top: 4px; display: block;">Enter
+                                    a positive number to add funds, or a negative number to subtract funds.</span>
                             </div>
 
                             <button type="submit" class="btn btn-primary btn-full">Submit Balance Update</button>
@@ -406,7 +518,12 @@
                     <div class="kpi-grid">
                         <div class="kpi-card">
                             <div class="kpi-icon-wrapper blue">
-                                <svg class="kpi-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2v20"/><path d="M2 12h20"/></svg>
+                                <svg class="kpi-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <circle cx="12" cy="12" r="10" />
+                                    <path d="M12 2v20" />
+                                    <path d="M2 12h20" />
+                                </svg>
                             </div>
                             <div class="kpi-data">
                                 <span class="kpi-title">Total Bets Placed</span>
@@ -416,7 +533,11 @@
 
                         <div class="kpi-card">
                             <div class="kpi-icon-wrapper orange">
-                                <svg class="kpi-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                                <svg class="kpi-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <polygon
+                                        points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                                </svg>
                             </div>
                             <div class="kpi-data">
                                 <span class="kpi-title">Winnings Returned</span>
@@ -426,7 +547,11 @@
 
                         <div class="kpi-card">
                             <div class="kpi-icon-wrapper green">
-                                <svg class="kpi-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                                <svg class="kpi-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <line x1="12" y1="1" x2="12" y2="23" />
+                                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                                </svg>
                             </div>
                             <div class="kpi-data">
                                 <span class="kpi-title">House Net Profit</span>
@@ -436,7 +561,11 @@
 
                         <div class="kpi-card">
                             <div class="kpi-icon-wrapper purple">
-                                <svg class="kpi-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/></svg>
+                                <svg class="kpi-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <circle cx="12" cy="12" r="10" />
+                                    <circle cx="12" cy="12" r="4" />
+                                </svg>
                             </div>
                             <div class="kpi-data">
                                 <span class="kpi-title">Payout Ratio (RTP)</span>
@@ -452,17 +581,22 @@
                                 <h2>RTP Percentage Configurator</h2>
                             </div>
                             <form id="spin-rtp-admin-form" class="contest-form" style="margin-top: 15px;">
-                                <div style="display: flex; gap: 15px; align-items: center; justify-content: space-between; margin-bottom: 20px; padding: 12px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 8px;">
+                                <div
+                                    style="display: flex; gap: 15px; align-items: center; justify-content: space-between; margin-bottom: 20px; padding: 12px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 8px;">
                                     <div>
-                                        <h4 style="margin: 0; font-size: 13px; font-weight: bold;">Spin Game Maintenance Lock</h4>
-                                        <p style="margin: 3px 0 0 0; font-size: 10px; color: var(--text-muted);">Enable to restrict wheel access for all players instantly.</p>
+                                        <h4 style="margin: 0; font-size: 13px; font-weight: bold;">Spin Game Maintenance
+                                            Lock</h4>
+                                        <p style="margin: 3px 0 0 0; font-size: 10px; color: var(--text-muted);">Enable
+                                            to restrict wheel access for all players instantly.</p>
                                     </div>
-                                    <button type="button" class="btn btn-secondary" id="btn-toggle-maintenance" style="padding: 6px 12px; font-size: 11px;">Enable Lockout</button>
+                                    <button type="button" class="btn btn-secondary" id="btn-toggle-maintenance"
+                                        style="padding: 6px 12px; font-size: 11px;">Enable Lockout</button>
                                 </div>
 
                                 <div class="form-group" style="margin-bottom: 15px;">
                                     <label for="rtp-tier-select">RTP Bet Tier Range</label>
-                                    <select id="rtp-tier-select" class="form-control" style="width:100%; background:#1e293b; color:#fff; border:1px solid #334155; padding:8px; border-radius:6px; font-family:inherit; margin-top:5px;">
+                                    <select id="rtp-tier-select" class="form-control"
+                                        style="width:100%; background:#1e293b; color:#fff; border:1px solid #334155; padding:8px; border-radius:6px; font-family:inherit; margin-top:5px;">
                                         <option value="1">Small Bets (₹1 – ₹49)</option>
                                         <option value="2">Medium Bets (₹50 – ₹100)</option>
                                         <option value="3">High Bets (Above ₹100)</option>
@@ -471,8 +605,12 @@
 
                                 <div class="form-group" style="margin-bottom: 15px;">
                                     <label for="rtp-json-editor">Probability Weights (JSON format)</label>
-                                    <textarea id="rtp-json-editor" style="width:100%; height:140px; background:#1e293b; color:#51ff00; border:1px solid #334155; padding:10px; border-radius:6px; font-family: monospace; resize:none; font-size:12px; margin-top:5px; line-height: 1.5;"></textarea>
-                                    <span style="font-size: 9px; color: var(--text-muted); display: block; margin-top: 4px;">Make sure the sum of all percentages is exactly 100%. Supported keys: "Lose", "1x", "1.1x", "1.2x", "1.5x", "2x", "3x", "5x".</span>
+                                    <textarea id="rtp-json-editor"
+                                        style="width:100%; height:140px; background:#1e293b; color:#51ff00; border:1px solid #334155; padding:10px; border-radius:6px; font-family: monospace; resize:none; font-size:12px; margin-top:5px; line-height: 1.5;"></textarea>
+                                    <span
+                                        style="font-size: 9px; color: var(--text-muted); display: block; margin-top: 4px;">Make
+                                        sure the sum of all percentages is exactly 100%. Supported keys: "Lose", "1x",
+                                        "1.1x", "1.2x", "1.5x", "2x", "3x", "5x".</span>
                                 </div>
 
                                 <button type="submit" class="btn btn-primary btn-full">Save RTP Settings</button>
@@ -495,7 +633,10 @@
                                         </tr>
                                     </thead>
                                     <tbody id="suspicious-spins-table-body">
-                                        <tr><td colspan="4" class="table-placeholder">No suspicious activity detected.</td></tr>
+                                        <tr>
+                                            <td colspan="4" class="table-placeholder">No suspicious activity detected.
+                                            </td>
+                                        </tr>
                                     </tbody>
                                 </table>
                             </div>
@@ -521,7 +662,9 @@
                                     </tr>
                                 </thead>
                                 <tbody id="spin-logs-table-body">
-                                    <tr><td colspan="7" class="table-placeholder">No spins logged yet.</td></tr>
+                                    <tr>
+                                        <td colspan="7" class="table-placeholder">No spins logged yet.</td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -561,11 +704,12 @@
                     <label for="m-start-time">Start Time</label>
                     <input type="datetime-local" id="m-start-time" required>
                 </div>
-                
+
                 <div class="prize-rules-section">
                     <div class="section-header">
                         <h3>Rank-wise Prize Rules</h3>
-                        <button type="button" class="btn btn-secondary btn-icon btn-action" id="btn-add-prize-rule" style="padding: 4px 8px; font-size: 11px;">
+                        <button type="button" class="btn btn-secondary btn-icon btn-action" id="btn-add-prize-rule"
+                            style="padding: 4px 8px; font-size: 11px;">
                             + Add Rule
                         </button>
                     </div>
@@ -577,16 +721,19 @@
                 <div class="prize-rules-section" style="margin-top: 20px;">
                     <div class="section-header">
                         <h3>Quiz Questions</h3>
-                        <button type="button" class="btn btn-secondary btn-icon btn-action" id="btn-add-question" style="padding: 4px 8px; font-size: 11px;">
+                        <button type="button" class="btn btn-secondary btn-icon btn-action" id="btn-add-question"
+                            style="padding: 4px 8px; font-size: 11px;">
                             + Add Question
                         </button>
                     </div>
-                    <div class="quiz-questions-list" id="quiz-questions-list" style="max-height: 200px; overflow-y: auto; margin-top: 10px; display: flex; flex-direction: column; gap: 10px;">
+                    <div class="quiz-questions-list" id="quiz-questions-list"
+                        style="max-height: 200px; overflow-y: auto; margin-top: 10px; display: flex; flex-direction: column; gap: 10px;">
                         <!-- Dynamic question rows go here -->
                     </div>
                 </div>
-                
-                <button type="submit" class="btn btn-primary btn-full" style="margin-top: 20px;">Create and Deploy</button>
+
+                <button type="submit" class="btn btn-primary btn-full" style="margin-top: 20px;">Create and
+                    Deploy</button>
             </form>
         </div>
     </div>
@@ -602,11 +749,13 @@
                 <input type="hidden" id="adj-user-id">
                 <div class="form-group" style="margin-bottom: 15px;">
                     <label>User Details</label>
-                    <div id="adj-user-details" style="font-weight: bold; color: var(--primary); margin-top: 5px;">-</div>
+                    <div id="adj-user-details" style="font-weight: bold; color: var(--primary); margin-top: 5px;">-
+                    </div>
                 </div>
                 <div class="form-group" style="margin-bottom: 15px;">
                     <label for="adj-wallet-type">Wallet Type</label>
-                    <select id="adj-wallet-type" class="form-control" style="width:100%; background:#1e293b; color:#fff; border:1px solid #334155; padding:8px; border-radius:6px; font-family:inherit;">
+                    <select id="adj-wallet-type" class="form-control"
+                        style="width:100%; background:#1e293b; color:#fff; border:1px solid #334155; padding:8px; border-radius:6px; font-family:inherit;">
                         <option value="deposit">Deposit Wallet</option>
                         <option value="winning">Winning Wallet</option>
                         <option value="bonus">Bonus Wallet</option>
@@ -614,8 +763,11 @@
                 </div>
                 <div class="form-group" style="margin-bottom: 15px;">
                     <label for="adj-amount">Amount (₹)</label>
-                    <input type="number" id="adj-amount" placeholder="e.g. 100" min="-100000" max="100000" step="any" required style="width:100%; background:#1e293b; color:#fff; border:1px solid #334155; padding:8px; border-radius:6px; font-family:inherit;">
-                    <span style="font-size: 10px; color: var(--text-muted); margin-top: 4px; display: block;">Use positive values to add, negative to subtract balance.</span>
+                    <input type="number" id="adj-amount" placeholder="e.g. 100" min="-100000" max="100000" step="any"
+                        required
+                        style="width:100%; background:#1e293b; color:#fff; border:1px solid #334155; padding:8px; border-radius:6px; font-family:inherit;">
+                    <span style="font-size: 10px; color: var(--text-muted); margin-top: 4px; display: block;">Use
+                        positive values to add, negative to subtract balance.</span>
                 </div>
                 <button type="submit" class="btn btn-primary btn-full" style="margin-top: 10px;">Update Balance</button>
             </form>
@@ -626,4 +778,5 @@
     <div id="toast" class="toast-notification"></div>
     <script src="app.js?v=1.0.1"></script>
 </body>
+
 </html>

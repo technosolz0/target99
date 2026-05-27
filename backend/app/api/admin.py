@@ -197,6 +197,49 @@ def approve_withdrawal(id: int, approve: bool, db: Session = Depends(get_db)):
         
     return tx
 
+@router.post("/deposits/{id}/approve", response_model=TransactionResponse)
+def approve_deposit(id: int, approve: bool, db: Session = Depends(get_db)):
+    tx = db.query(WalletTransaction).filter(WalletTransaction.id == id).first()
+    if not tx:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+        
+    if tx.status != "PENDING" or tx.type != "DEPOSIT":
+        raise HTTPException(status_code=400, detail="Transaction is not a pending deposit")
+        
+    user = db.query(User).filter(User.id == tx.user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    if approve:
+        tx.status = "SUCCESS"
+        user.deposit_balance += tx.amount
+        db.commit()
+        db.refresh(tx)
+        
+        # Send push notification for deposit approval
+        from app.core.notifications import send_push_to_user
+        send_push_to_user(
+            db,
+            user.id,
+            title="💰 Deposit Approved!",
+            body=f"Your deposit of ₹{tx.amount:.2f} has been approved and credited."
+        )
+    else:
+        tx.status = "FAILED"
+        db.commit()
+        db.refresh(tx)
+        
+        # Send push notification for rejected deposit
+        from app.core.notifications import send_push_to_user
+        send_push_to_user(
+            db,
+            user.id,
+            title="❌ Deposit Rejected",
+            body=f"Your deposit request of ₹{tx.amount:.2f} (UTR: {tx.utr}) was rejected."
+        )
+        
+    return tx
+
 # New Notification and Contest Completion Endpoints
 from app.schemas import SendUserNotificationRequest, SendAllNotificationRequest
 from app.core.notifications import send_push_to_user, send_push_to_all

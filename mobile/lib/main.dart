@@ -15,6 +15,7 @@ import 'package:target99/features/referral/referral_screen.dart';
 import 'package:target99/features/profile/profile_screen.dart';
 import 'package:target99/core/constants/app_constants.dart';
 import 'package:target99/features/update/update_required_screen.dart';
+import 'package:target99/features/splash/splash_screen.dart';
 
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
     GlobalKey<ScaffoldMessengerState>();
@@ -117,99 +118,14 @@ class _Target99AppState extends State<Target99App> {
         title: 'Target99',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.darkTheme,
-        home: Scaffold(
-          body: Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [AppTheme.darkBg, Color(0xFF0F1426)],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
-            ),
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: const LinearGradient(
-                        colors: [AppTheme.accentCyan, AppTheme.accentPurple],
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppTheme.accentCyan.withOpacity(0.3),
-                          blurRadius: 25,
-                          spreadRadius: 3,
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.sports_esports,
-                      size: 56,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  RichText(
-                    text: const TextSpan(
-                      style: TextStyle(
-                        fontSize: 36,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -1,
-                      ),
-                      children: [
-                        TextSpan(
-                          text: 'target',
-                          style: TextStyle(color: AppTheme.accentCyan),
-                        ),
-                        TextSpan(
-                          text: '99',
-                          style: TextStyle(color: Colors.white),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'SKILL-BASED REAL MONEY GAMING',
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: AppTheme.textMuted,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 2.5,
-                    ),
-                  ),
-                  const SizedBox(height: 48),
-                  if (_error != null) ...[
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 32.0),
-                      child: Text(
-                        'Initialization failed: $_error',
-                        style: const TextStyle(
-                          color: AppTheme.accentRed,
-                          fontSize: 12,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () {
-                        setState(() {
-                          _error = null;
-                        });
-                        _performInitialization();
-                      },
-                      child: const Text('RETRY'),
-                    ),
-                  ] else
-                    const CircularProgressIndicator(color: AppTheme.accentCyan),
-                ],
-              ),
-            ),
-          ),
+        home: SplashScreen(
+          error: _error,
+          onRetry: () {
+            setState(() {
+              _error = null;
+            });
+            _performInitialization();
+          },
         ),
       );
     }
@@ -246,11 +162,7 @@ class AuthWrapper extends StatelessWidget {
           );
         }
         if (state.isSplashLoading) {
-          return const Scaffold(
-            body: Center(
-              child: CircularProgressIndicator(color: AppTheme.accentCyan),
-            ),
-          );
+          return const SplashScreen();
         }
         if (state.token != null && state.currentUser != null) {
           // Authenticated User
@@ -282,12 +194,20 @@ class _MainNavigationLayoutState extends State<MainNavigationLayout> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final state = context.read<AppBloc>().state;
       if (state.updateOptional) {
-        _showOptionalUpdateBottomSheet(context, state.updateUrl ?? '', state.serverLatestVersion ?? '');
+        _showOptionalUpdateBottomSheet(
+          context,
+          state.updateUrl ?? '',
+          state.serverLatestVersion ?? '',
+        );
       }
     });
   }
 
-  void _showOptionalUpdateBottomSheet(BuildContext context, String updateUrl, String latestVersion) {
+  void _showOptionalUpdateBottomSheet(
+    BuildContext context,
+    String updateUrl,
+    String latestVersion,
+  ) {
     showModalBottomSheet(
       context: context,
       backgroundColor: AppTheme.cardBg,
@@ -308,18 +228,26 @@ class _MainNavigationLayoutState extends State<MainNavigationLayout> {
                   children: [
                     const Text(
                       '🎉 Update Available!',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.accentCyan),
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.accentCyan,
+                      ),
                     ),
                     IconButton(
                       icon: const Icon(Icons.close, color: AppTheme.textMuted),
                       onPressed: () => Navigator.pop(ctx),
-                    )
+                    ),
                   ],
                 ),
                 const SizedBox(height: 8),
                 Text(
                   'A new version (v$latestVersion) of target99 is ready. Update now for new lobbies, faster spins, and updated security!',
-                  style: const TextStyle(color: AppTheme.textMuted, fontSize: 13, height: 1.4),
+                  style: const TextStyle(
+                    color: AppTheme.textMuted,
+                    fontSize: 13,
+                    height: 1.4,
+                  ),
                 ),
                 const SizedBox(height: 24),
                 Container(
@@ -332,10 +260,15 @@ class _MainNavigationLayoutState extends State<MainNavigationLayout> {
                   child: ElevatedButton(
                     onPressed: () {
                       Navigator.pop(ctx);
-                      print("Redirecting user to Play Store/App Store update URL: $updateUrl");
+                      print(
+                        "Redirecting user to Play Store/App Store update URL: $updateUrl",
+                      );
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('Navigating to update link:\n$updateUrl', style: const TextStyle(color: Colors.white)),
+                          content: Text(
+                            'Navigating to update link:\n$updateUrl',
+                            style: const TextStyle(color: Colors.white),
+                          ),
                           backgroundColor: AppTheme.accentCyan,
                           behavior: SnackBarBehavior.floating,
                         ),
@@ -345,7 +278,9 @@ class _MainNavigationLayoutState extends State<MainNavigationLayout> {
                       backgroundColor: Colors.transparent,
                       foregroundColor: Colors.white,
                       shadowColor: Colors.transparent,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                     child: const Text('UPDATE NOW'),
                   ),
@@ -355,10 +290,15 @@ class _MainNavigationLayoutState extends State<MainNavigationLayout> {
                   onPressed: () => Navigator.pop(ctx),
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: AppTheme.borderCol),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
-                  child: const Text('MAYBE LATER', style: TextStyle(color: AppTheme.textMuted)),
+                  child: const Text(
+                    'MAYBE LATER',
+                    style: TextStyle(color: AppTheme.textMuted),
+                  ),
                 ),
               ],
             ),

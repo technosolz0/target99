@@ -31,6 +31,7 @@ const el = {
     // Tables
     get usersTable() { return document.getElementById('users-table-body'); },
     get contestsTable() { return document.getElementById('contests-table-body'); },
+    get depositsTable() { return document.getElementById('deposits-table-body'); },
     get withdrawalsTable() { return document.getElementById('withdrawals-table-body'); },
     get transactionsTable() { return document.getElementById('transactions-table-body'); },
     get userSearch() { return document.getElementById('user-search'); },
@@ -764,6 +765,10 @@ async function loadWithdrawals() {
         if (!res.ok) throw new Error("Failed to load transactions history.");
         const allTransactions = await res.json();
 
+        // Filter pending manual deposits for approvals table
+        const pendingDeposits = allTransactions.filter(t => t.type === 'DEPOSIT' && t.status === 'PENDING');
+        renderDepositsTable(pendingDeposits);
+
         // Filter pending withdrawals for approvals table
         const pendingWithdrawals = allTransactions.filter(t => t.type === 'WITHDRAWAL' && t.status === 'PENDING');
         renderWithdrawalsTable(pendingWithdrawals);
@@ -867,6 +872,55 @@ async function approveWithdrawal(txId, approve) {
         showToast(err.message, true);
     }
 }
+
+function renderDepositsTable(depositsList) {
+    if (!el.depositsTable) return;
+
+    if (depositsList.length === 0) {
+        el.depositsTable.innerHTML = `<tr><td colspan="6" class="table-placeholder">No pending manual deposits.</td></tr>`;
+        return;
+    }
+
+    el.depositsTable.innerHTML = depositsList.map(d => {
+        const dateStr = new Date(d.created_at).toLocaleString();
+        const userObj = state.users.find(u => u.id === d.user_id);
+        const userDetails = userObj ? `${userObj.name || 'Anonymous'} (${userObj.phone})` : `User #${d.user_id}`;
+
+        let actions = `
+            <div style="display:flex; gap: 8px;">
+                <button class="btn btn-action btn-unban" onclick="approveDeposit(${d.id}, true)">Approve</button>
+                <button class="btn btn-action btn-ban" onclick="approveDeposit(${d.id}, false)">Reject</button>
+            </div>
+        `;
+
+        return `
+            <tr>
+                <td>#${d.id}</td>
+                <td>${userDetails}</td>
+                <td><strong style="color:var(--success)">₹${d.amount.toFixed(2)}</strong></td>
+                <td><code style="background: rgba(255,255,255,0.05); padding: 4px 8px; border-radius: 4px; font-family: monospace; font-size: 12px; color: var(--primary);">${d.utr || 'N/A'}</code></td>
+                <td>${dateStr}</td>
+                <td>${actions}</td>
+            </tr>
+        `;
+    }).join('');
+}
+
+async function approveDeposit(txId, approve) {
+    try {
+        const res = await fetch(`${API_BASE}/admin/deposits/${txId}/approve?approve=${approve}`, {
+            method: 'POST'
+        });
+        if (!res.ok) throw new Error("Failed to process deposit action.");
+
+        showToast(approve ? "Manual deposit approved and credited!" : "Manual deposit request rejected.");
+        loadDashboardData();
+    } catch (err) {
+        showToast(err.message, true);
+    }
+}
+
+window.approveDeposit = approveDeposit;
 
 async function completeContest(contestId) {
     if (!confirm("Are you sure you want to complete this contest and pay out the winners?")) return;

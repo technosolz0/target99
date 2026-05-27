@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:target99/core/theme/app_theme.dart';
 import 'package:target99/core/models/spin_model.dart';
+import 'package:target99/core/widgets/custom_button.dart';
 import 'package:target99/features/app_bloc.dart';
 import 'package:target99/core/network/remote_config_service.dart';
 import 'package:target99/core/utils/dependency_injection.dart';
@@ -20,11 +21,11 @@ class _SpinWheelScreenState extends State<SpinWheelScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _animation;
-  
+
   final _betController = TextEditingController(text: '10');
   double _selectedChip = 10.0;
   bool _isSpinning = false;
-  
+
   // 12 sectors matching the backend segment indices
   static const List<Map<String, dynamic>> wheelSectors = [
     {"label": "Lose", "isWin": false, "color": AppTheme.cardBg},
@@ -51,10 +52,10 @@ class _SpinWheelScreenState extends State<SpinWheelScreen>
       vsync: this,
       duration: const Duration(seconds: 4),
     );
-    
+
     // Initialize animation to 0 radians
     _animation = Tween<double>(begin: 0, end: 0).animate(_animationController);
-    
+
     // Fetch spin history
     context.read<AppBloc>().add(FetchSpinHistoryEvent());
   }
@@ -78,21 +79,18 @@ class _SpinWheelScreenState extends State<SpinWheelScreen>
     // Rotation = 270 - (index * 30 + 15) degrees.
     // We add 5 full rotations (360 * 5) for high excitement!
     final double currentAngle = _animation.value % (2 * pi);
-    final double targetDegrees = 360 * 5 + (270.0 - (targetIndex * 30.0 + 15.0));
+    final double targetDegrees =
+        360 * 5 + (270.0 - (targetIndex * 30.0 + 15.0));
     final double targetRadians = targetDegrees * pi / 180.0;
 
-    _animation = Tween<double>(
-      begin: currentAngle,
-      end: targetRadians,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeOutCubic,
-    ));
+    _animation = Tween<double>(begin: currentAngle, end: targetRadians).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic),
+    );
 
     // Tactile Haptic boundaries cross tracker
     double lastAngle = currentAngle;
     final double sectorStep = 30.0 * pi / 180.0; // 30 degrees in radians
-    
+
     _animation.addListener(() {
       final double diff = (_animation.value - lastAngle).abs();
       if (diff >= sectorStep * 0.8) {
@@ -150,7 +148,9 @@ class _SpinWheelScreenState extends State<SpinWheelScreen>
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
-                    isWin ? Icons.emoji_events_outlined : Icons.sentiment_dissatisfied,
+                    isWin
+                        ? Icons.emoji_events_outlined
+                        : Icons.sentiment_dissatisfied,
                     color: isWin ? AppTheme.accentEmerald : AppTheme.accentRed,
                     size: 56,
                   ),
@@ -171,7 +171,10 @@ class _SpinWheelScreenState extends State<SpinWheelScreen>
                       ? 'You hit a massive ${result.multiplier}x multiplier!'
                       : 'Better luck next time! The wheel is waiting.',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(color: AppTheme.textMuted, fontSize: 13),
+                  style: const TextStyle(
+                    color: AppTheme.textMuted,
+                    fontSize: 13,
+                  ),
                 ),
                 const SizedBox(height: 20),
                 if (isWin) ...[
@@ -209,32 +212,29 @@ class _SpinWheelScreenState extends State<SpinWheelScreen>
                   ),
                   const SizedBox(height: 20),
                 ],
-                ElevatedButton(
+                CustomButton(
+                  text: 'CONTINUE PLAY',
+                  type: CustomButtonType.primary,
                   onPressed: () {
-                    Navigator.pop(ctx);
-                    context.read<AppBloc>().add(ResetSpinEvent()); // Clear the spin result
+                    Navigator.of(context).pop(); // Close result overlay dialog
+                    context.read<AppBloc>().add(
+                      ResetSpinEvent(),
+                    ); // Clear the spin result
                     context.read<AppBloc>().add(FetchSpinHistoryEvent());
                   },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: isWin ? AppTheme.accentEmerald : AppTheme.accentCyan,
-                    foregroundColor: Colors.black,
-                    minimumSize: const Size(double.infinity, 48),
-                  ),
-                  child: const Text('CONTINUE PLAY'),
                 ),
                 const SizedBox(height: 12),
-                OutlinedButton(
+                CustomButton(
+                  text: 'GO BACK',
+                  type: CustomButtonType.secondary,
                   onPressed: () {
-                    Navigator.pop(ctx); // Close result overlay dialog
-                    context.read<AppBloc>().add(ResetSpinEvent()); // Clear the spin result
-                    Navigator.pop(context); // Go back to Home
+                    final navigator = Navigator.of(context);
+                    navigator.pop(); // Close result overlay dialog
+                    navigator.pop(); // Go back to Home
+                    context.read<AppBloc>().add(
+                      ResetSpinEvent(),
+                    ); // Clear the spin result
                   },
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    side: const BorderSide(color: AppTheme.borderCol),
-                    minimumSize: const Size(double.infinity, 48),
-                  ),
-                  child: const Text('GO BACK'),
                 ),
               ],
             ),
@@ -295,8 +295,11 @@ class _SpinWheelScreenState extends State<SpinWheelScreen>
         builder: (context, state) {
           final user = state.currentUser;
           final double totalUsable =
-              (user?.depositBalance ?? 0.0) + (user?.winningBalance ?? 0.0) + (user?.bonusBalance ?? 0.0);
-          final double betVal = double.tryParse(_betController.text.trim()) ?? 0.0;
+              (user?.depositBalance ?? 0.0) +
+              (user?.winningBalance ?? 0.0) +
+              (user?.bonusBalance ?? 0.0);
+          final double betVal =
+              double.tryParse(_betController.text.trim()) ?? 0.0;
           final bool hasSuffFunds = totalUsable >= betVal;
 
           return Scaffold(
@@ -315,7 +318,10 @@ class _SpinWheelScreenState extends State<SpinWheelScreen>
               ],
             ),
             body: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24.0,
+                vertical: 12.0,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -351,13 +357,25 @@ class _SpinWheelScreenState extends State<SpinWheelScreen>
                           ),
                           Row(
                             children: [
-                              _subBal('Deposit', user?.depositBalance ?? 0.0, AppTheme.accentCyan),
+                              _subBal(
+                                'Deposit',
+                                user?.depositBalance ?? 0.0,
+                                AppTheme.accentCyan,
+                              ),
                               const SizedBox(width: 12),
-                              _subBal('Winnings', user?.winningBalance ?? 0.0, AppTheme.accentEmerald),
+                              _subBal(
+                                'Winnings',
+                                user?.winningBalance ?? 0.0,
+                                AppTheme.accentEmerald,
+                              ),
                               const SizedBox(width: 12),
-                              _subBal('Bonus', user?.bonusBalance ?? 0.0, AppTheme.accentPurple),
+                              _subBal(
+                                'Bonus',
+                                user?.bonusBalance ?? 0.0,
+                                AppTheme.accentPurple,
+                              ),
                             ],
-                          )
+                          ),
                         ],
                       ),
                     ),
@@ -383,11 +401,11 @@ class _SpinWheelScreenState extends State<SpinWheelScreen>
                                   color: AppTheme.accentCyan.withOpacity(0.08),
                                   blurRadius: 40,
                                   spreadRadius: 5,
-                                )
+                                ),
                               ],
                             ),
                           ),
-                          
+
                           // Animated Custom Painter Canvas Wheel
                           AnimatedBuilder(
                             animation: _animation,
@@ -431,16 +449,23 @@ class _SpinWheelScreenState extends State<SpinWheelScreen>
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               color: AppTheme.darkBg,
-                              border: Border.all(color: AppTheme.accentCyan, width: 2),
+                              border: Border.all(
+                                color: AppTheme.accentCyan,
+                                width: 2,
+                              ),
                               boxShadow: [
                                 BoxShadow(
                                   color: AppTheme.accentCyan.withOpacity(0.4),
                                   blurRadius: 10,
-                                )
+                                ),
                               ],
                             ),
                             child: const Center(
-                              child: Icon(Icons.casino, size: 14, color: AppTheme.accentCyan),
+                              child: Icon(
+                                Icons.casino,
+                                size: 14,
+                                color: AppTheme.accentCyan,
+                              ),
                             ),
                           ),
                         ],
@@ -461,7 +486,7 @@ class _SpinWheelScreenState extends State<SpinWheelScreen>
                     ),
                   ),
                   const SizedBox(height: 12),
-                  
+
                   // Interactive Neon Chips selector
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -487,7 +512,9 @@ class _SpinWheelScreenState extends State<SpinWheelScreen>
                           height: 48,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: isSel ? cColor.withOpacity(0.12) : AppTheme.cardBg,
+                            color: isSel
+                                ? cColor.withOpacity(0.12)
+                                : AppTheme.cardBg,
                             border: Border.all(
                               color: isSel ? cColor : AppTheme.borderCol,
                               width: isSel ? 2 : 1.2,
@@ -497,7 +524,7 @@ class _SpinWheelScreenState extends State<SpinWheelScreen>
                                     BoxShadow(
                                       color: cColor.withOpacity(0.3),
                                       blurRadius: 8,
-                                    )
+                                    ),
                                   ]
                                 : null,
                           ),
@@ -539,48 +566,33 @@ class _SpinWheelScreenState extends State<SpinWheelScreen>
 
                   // Launch Spin Wheel CTA Button
                   if (!hasSuffFunds && !_isSpinning) ...[
-                    ElevatedButton(
+                    CustomButton(
+                      text: 'ADD ₹${(betVal - totalUsable).ceil()} TO SPIN',
+                      type: CustomButtonType.primary,
+                      height: 52.0,
                       onPressed: () {
                         final shortfall = betVal - totalUsable;
                         _showAdminDepositBottomSheet(context, shortfall);
                       },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.accentCyan,
-                        foregroundColor: Colors.black,
-                        minimumSize: const Size(double.infinity, 52),
-                      ),
-                      child: Text('ADD ₹${(betVal - totalUsable).ceil()} TO SPIN'),
-                    )
+                    ),
                   ] else ...[
-                    ElevatedButton(
+                    CustomButton(
+                      text: 'SPIN CASINO WHEEL',
+                      type: CustomButtonType.primary,
+                      height: 52.0,
+                      isLoading: _isSpinning || state.isSpinLoading,
                       onPressed: (_isSpinning || state.isSpinLoading)
                           ? null
                           : _executeSpinRequest,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.accentEmerald,
-                        foregroundColor: Colors.black,
-                        minimumSize: const Size(double.infinity, 52),
-                        disabledBackgroundColor: AppTheme.accentEmerald.withOpacity(0.3),
-                      ),
-                      child: (_isSpinning || state.isSpinLoading)
-                          ? const SizedBox(
-                              width: 22,
-                              height: 22,
-                              child: CircularProgressIndicator(
-                                color: Colors.black,
-                                strokeWidth: 2,
-                              ),
-                            )
-                          : const Text('SPIN CASINO WHEEL'),
                     ),
                   ],
                   const SizedBox(height: 16),
-                  
+
                   const Text(
                     '🔒 Dynamic RTP Payout Guarantee. Multiplier generated securely on backend engine only.',
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 9, color: AppTheme.textMuted),
-                  )
+                  ),
                 ],
               ),
             ),
@@ -596,11 +608,19 @@ class _SpinWheelScreenState extends State<SpinWheelScreen>
       children: [
         Text(
           name.toUpperCase(),
-          style: const TextStyle(fontSize: 6, color: AppTheme.textMuted, fontWeight: FontWeight.bold),
+          style: const TextStyle(
+            fontSize: 6,
+            color: AppTheme.textMuted,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         Text(
           '₹${val.toInt()}',
-          style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: color),
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
         ),
       ],
     );
@@ -680,13 +700,19 @@ class _SpinWheelScreenState extends State<SpinWheelScreen>
                                   shape: BoxShape.circle,
                                 ),
                                 child: Icon(
-                                  isWin ? Icons.casino : Icons.remove_circle_outline,
-                                  color: isWin ? AppTheme.accentEmerald : AppTheme.accentRed,
+                                  isWin
+                                      ? Icons.casino
+                                      : Icons.remove_circle_outline,
+                                  color: isWin
+                                      ? AppTheme.accentEmerald
+                                      : AppTheme.accentRed,
                                   size: 18,
                                 ),
                               ),
                               title: Text(
-                                isWin ? 'WINNER (${spin.wheelSegment})' : 'LOSS (${spin.wheelSegment})',
+                                isWin
+                                    ? 'WINNER (${spin.wheelSegment})'
+                                    : 'LOSS (${spin.wheelSegment})',
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 12,
@@ -694,7 +720,10 @@ class _SpinWheelScreenState extends State<SpinWheelScreen>
                               ),
                               subtitle: Text(
                                 '$dateStr • Charged: ₹${spin.betAmount.toInt()}',
-                                style: const TextStyle(fontSize: 9, color: AppTheme.textMuted),
+                                style: const TextStyle(
+                                  fontSize: 9,
+                                  color: AppTheme.textMuted,
+                                ),
                               ),
                               trailing: Text(
                                 isWin
@@ -703,7 +732,9 @@ class _SpinWheelScreenState extends State<SpinWheelScreen>
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 13,
-                                  color: isWin ? AppTheme.accentEmerald : AppTheme.textMuted,
+                                  color: isWin
+                                      ? AppTheme.accentEmerald
+                                      : AppTheme.textMuted,
                                 ),
                               ),
                             ),
@@ -720,7 +751,10 @@ class _SpinWheelScreenState extends State<SpinWheelScreen>
     );
   }
 
-  void _showAdminDepositBottomSheet(BuildContext context, double defaultAmount) {
+  void _showAdminDepositBottomSheet(
+    BuildContext context,
+    double defaultAmount,
+  ) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -738,8 +772,9 @@ class _SpinWheelScreenState extends State<SpinWheelScreen>
         final String supportPhone = remoteConfig.adminContactPhone;
         final String supportEmail = remoteConfig.adminContactEmail;
 
-        final TextEditingController amountController =
-            TextEditingController(text: defaultAmount.ceil().toString());
+        final TextEditingController amountController = TextEditingController(
+          text: defaultAmount.ceil().toString(),
+        );
         final TextEditingController utrController = TextEditingController();
         int activeTab = 0; // 0 for UPI, 1 for Bank
 
@@ -781,7 +816,10 @@ class _SpinWheelScreenState extends State<SpinWheelScreen>
                       const Text(
                         'Transfer payment to the Admin details below. After payment is complete, enter the transaction UTR number to instantly credit your wallet.',
                         textAlign: TextAlign.center,
-                        style: TextStyle(color: AppTheme.textMuted, fontSize: 11),
+                        style: TextStyle(
+                          color: AppTheme.textMuted,
+                          fontSize: 11,
+                        ),
                       ),
                       const SizedBox(height: 24),
 
@@ -799,17 +837,28 @@ class _SpinWheelScreenState extends State<SpinWheelScreen>
                               child: GestureDetector(
                                 onTap: () => setSheetState(() => activeTab = 0),
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                  ),
                                   decoration: BoxDecoration(
-                                    color: activeTab == 0 ? AppTheme.accentCyan.withOpacity(0.1) : Colors.transparent,
+                                    color: activeTab == 0
+                                        ? AppTheme.accentCyan.withOpacity(0.1)
+                                        : Colors.transparent,
                                     borderRadius: BorderRadius.circular(12),
-                                    border: activeTab == 0 ? Border.all(color: AppTheme.accentCyan.withOpacity(0.5)) : null,
+                                    border: activeTab == 0
+                                        ? Border.all(
+                                            color: AppTheme.accentCyan
+                                                .withOpacity(0.5),
+                                          )
+                                        : null,
                                   ),
                                   child: Center(
                                     child: Text(
                                       'UPI Transfer',
                                       style: TextStyle(
-                                        color: activeTab == 0 ? AppTheme.accentCyan : Colors.white60,
+                                        color: activeTab == 0
+                                            ? AppTheme.accentCyan
+                                            : Colors.white60,
                                         fontWeight: FontWeight.bold,
                                         fontSize: 13,
                                       ),
@@ -822,17 +871,28 @@ class _SpinWheelScreenState extends State<SpinWheelScreen>
                               child: GestureDetector(
                                 onTap: () => setSheetState(() => activeTab = 1),
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                  ),
                                   decoration: BoxDecoration(
-                                    color: activeTab == 1 ? AppTheme.accentPurple.withOpacity(0.1) : Colors.transparent,
+                                    color: activeTab == 1
+                                        ? AppTheme.accentPurple.withOpacity(0.1)
+                                        : Colors.transparent,
                                     borderRadius: BorderRadius.circular(12),
-                                    border: activeTab == 1 ? Border.all(color: AppTheme.accentPurple.withOpacity(0.5)) : null,
+                                    border: activeTab == 1
+                                        ? Border.all(
+                                            color: AppTheme.accentPurple
+                                                .withOpacity(0.5),
+                                          )
+                                        : null,
                                   ),
                                   child: Center(
                                     child: Text(
                                       'Bank Account',
                                       style: TextStyle(
-                                        color: activeTab == 1 ? AppTheme.accentPurple : Colors.white60,
+                                        color: activeTab == 1
+                                            ? AppTheme.accentPurple
+                                            : Colors.white60,
                                         fontWeight: FontWeight.bold,
                                         fontSize: 13,
                                       ),
@@ -861,11 +921,16 @@ class _SpinWheelScreenState extends State<SpinWheelScreen>
                               children: [
                                 const Text(
                                   'OFFICIAL UPI ADDRESS',
-                                  style: TextStyle(fontSize: 8, color: AppTheme.textMuted, fontWeight: FontWeight.bold),
+                                  style: TextStyle(
+                                    fontSize: 8,
+                                    color: AppTheme.textMuted,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                                 const SizedBox(height: 6),
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
                                     Expanded(
                                       child: SelectableText(
@@ -878,17 +943,25 @@ class _SpinWheelScreenState extends State<SpinWheelScreen>
                                       ),
                                     ),
                                     IconButton(
-                                      icon: const Icon(Icons.copy, color: AppTheme.accentCyan),
+                                      icon: const Icon(
+                                        Icons.copy,
+                                        color: AppTheme.accentCyan,
+                                      ),
                                       onPressed: () {
-                                        Clipboard.setData(ClipboardData(text: upiId));
+                                        Clipboard.setData(
+                                          ClipboardData(text: upiId),
+                                        );
                                         ScaffoldMessenger.of(ctx).showSnackBar(
                                           const SnackBar(
-                                            content: Text('UPI ID copied to clipboard.'),
-                                            backgroundColor: AppTheme.accentCyan,
+                                            content: Text(
+                                              'UPI ID copied to clipboard.',
+                                            ),
+                                            backgroundColor:
+                                                AppTheme.accentCyan,
                                           ),
                                         );
                                       },
-                                    )
+                                    ),
                                   ],
                                 ),
                               ],
@@ -907,11 +980,28 @@ class _SpinWheelScreenState extends State<SpinWheelScreen>
                             child: Column(
                               children: [
                                 _adminDetailCopyRow(ctx, 'BANK NAME', bankName),
-                                const Divider(color: AppTheme.borderCol, height: 16),
-                                _adminDetailCopyRow(ctx, 'HOLDER NAME', bankHolder),
-                                const Divider(color: AppTheme.borderCol, height: 16),
-                                _adminDetailCopyRow(ctx, 'ACCOUNT NUMBER', bankAccount),
-                                const Divider(color: AppTheme.borderCol, height: 16),
+                                const Divider(
+                                  color: AppTheme.borderCol,
+                                  height: 16,
+                                ),
+                                _adminDetailCopyRow(
+                                  ctx,
+                                  'HOLDER NAME',
+                                  bankHolder,
+                                ),
+                                const Divider(
+                                  color: AppTheme.borderCol,
+                                  height: 16,
+                                ),
+                                _adminDetailCopyRow(
+                                  ctx,
+                                  'ACCOUNT NUMBER',
+                                  bankAccount,
+                                ),
+                                const Divider(
+                                  color: AppTheme.borderCol,
+                                  height: 16,
+                                ),
                                 _adminDetailCopyRow(ctx, 'IFSC CODE', bankIfsc),
                               ],
                             ),
@@ -933,7 +1023,11 @@ class _SpinWheelScreenState extends State<SpinWheelScreen>
                           children: [
                             const Row(
                               children: [
-                                Icon(Icons.support_agent, color: AppTheme.accentAmber, size: 18),
+                                Icon(
+                                  Icons.support_agent,
+                                  color: AppTheme.accentAmber,
+                                  size: 18,
+                                ),
                                 SizedBox(width: 8),
                                 Text(
                                   'ADMIN SUPPORT & QUERIES',
@@ -952,20 +1046,43 @@ class _SpinWheelScreenState extends State<SpinWheelScreen>
                               children: [
                                 Row(
                                   children: [
-                                    const Icon(Icons.phone_android, size: 14, color: AppTheme.textMuted),
+                                    const Icon(
+                                      Icons.phone_android,
+                                      size: 14,
+                                      color: AppTheme.textMuted,
+                                    ),
                                     const SizedBox(width: 6),
                                     Text(
                                       supportPhone,
-                                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                     ),
                                   ],
                                 ),
                                 TextButton.icon(
-                                  style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: Size.zero),
-                                  icon: const Icon(Icons.copy, size: 12, color: AppTheme.accentAmber),
-                                  label: const Text('COPY', style: TextStyle(fontSize: 10, color: AppTheme.accentAmber, fontWeight: FontWeight.bold)),
+                                  style: TextButton.styleFrom(
+                                    padding: EdgeInsets.zero,
+                                    minimumSize: Size.zero,
+                                  ),
+                                  icon: const Icon(
+                                    Icons.copy,
+                                    size: 12,
+                                    color: AppTheme.accentAmber,
+                                  ),
+                                  label: const Text(
+                                    'COPY',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: AppTheme.accentAmber,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                                   onPressed: () {
-                                    Clipboard.setData(ClipboardData(text: supportPhone));
+                                    Clipboard.setData(
+                                      ClipboardData(text: supportPhone),
+                                    );
                                     ScaffoldMessenger.of(ctx).showSnackBar(
                                       const SnackBar(
                                         content: Text('Support phone copied.'),
@@ -973,7 +1090,7 @@ class _SpinWheelScreenState extends State<SpinWheelScreen>
                                       ),
                                     );
                                   },
-                                )
+                                ),
                               ],
                             ),
                             const SizedBox(height: 6),
@@ -982,20 +1099,43 @@ class _SpinWheelScreenState extends State<SpinWheelScreen>
                               children: [
                                 Row(
                                   children: [
-                                    const Icon(Icons.email_outlined, size: 14, color: AppTheme.textMuted),
+                                    const Icon(
+                                      Icons.email_outlined,
+                                      size: 14,
+                                      color: AppTheme.textMuted,
+                                    ),
                                     const SizedBox(width: 6),
                                     Text(
                                       supportEmail,
-                                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                     ),
                                   ],
                                 ),
                                 TextButton.icon(
-                                  style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: Size.zero),
-                                  icon: const Icon(Icons.copy, size: 12, color: AppTheme.accentAmber),
-                                  label: const Text('COPY', style: TextStyle(fontSize: 10, color: AppTheme.accentAmber, fontWeight: FontWeight.bold)),
+                                  style: TextButton.styleFrom(
+                                    padding: EdgeInsets.zero,
+                                    minimumSize: Size.zero,
+                                  ),
+                                  icon: const Icon(
+                                    Icons.copy,
+                                    size: 12,
+                                    color: AppTheme.accentAmber,
+                                  ),
+                                  label: const Text(
+                                    'COPY',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: AppTheme.accentAmber,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                                   onPressed: () {
-                                    Clipboard.setData(ClipboardData(text: supportEmail));
+                                    Clipboard.setData(
+                                      ClipboardData(text: supportEmail),
+                                    );
                                     ScaffoldMessenger.of(ctx).showSnackBar(
                                       const SnackBar(
                                         content: Text('Support email copied.'),
@@ -1003,7 +1143,7 @@ class _SpinWheelScreenState extends State<SpinWheelScreen>
                                       ),
                                     );
                                   },
-                                )
+                                ),
                               ],
                             ),
                           ],
@@ -1048,7 +1188,9 @@ class _SpinWheelScreenState extends State<SpinWheelScreen>
                       // Submit request button
                       ElevatedButton(
                         onPressed: () {
-                          final double? amt = double.tryParse(amountController.text.trim());
+                          final double? amt = double.tryParse(
+                            amountController.text.trim(),
+                          );
                           final String utr = utrController.text.trim();
 
                           if (amt == null || amt <= 0.0) {
@@ -1063,7 +1205,9 @@ class _SpinWheelScreenState extends State<SpinWheelScreen>
                           if (utr.length != 12) {
                             ScaffoldMessenger.of(ctx).showSnackBar(
                               const SnackBar(
-                                content: Text('Please enter a valid 12-digit UTR/Reference ID.'),
+                                content: Text(
+                                  'Please enter a valid 12-digit UTR/Reference ID.',
+                                ),
                                 backgroundColor: AppTheme.accentRed,
                               ),
                             );
@@ -1072,12 +1216,14 @@ class _SpinWheelScreenState extends State<SpinWheelScreen>
 
                           Navigator.pop(ctx);
 
-                          // Process manual payment instant deposit
-                          context.read<AppBloc>().add(DepositMoneyEvent(amt));
+                          // Process manual payment pending deposit with UTR verification
+                          context.read<AppBloc>().add(DepositMoneyEvent(amt, utr: utr));
 
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text('Deposit of ₹${amt.toStringAsFixed(2)} submitted successfully! (UTR: $utr)'),
+                              content: Text(
+                                'Deposit request of ₹${amt.toStringAsFixed(2)} submitted successfully for verification! (UTR: $utr)',
+                              ),
                               backgroundColor: AppTheme.accentEmerald,
                               duration: const Duration(seconds: 4),
                             ),
@@ -1111,7 +1257,11 @@ class _SpinWheelScreenState extends State<SpinWheelScreen>
             children: [
               Text(
                 label,
-                style: const TextStyle(fontSize: 8, color: AppTheme.textMuted, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  fontSize: 8,
+                  color: AppTheme.textMuted,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 2),
               SelectableText(
@@ -1136,7 +1286,7 @@ class _SpinWheelScreenState extends State<SpinWheelScreen>
               ),
             );
           },
-        )
+        ),
       ],
     );
   }
@@ -1152,9 +1302,8 @@ class WheelPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final double radius = size.width / 2;
     final Offset center = Offset(radius, radius);
-    
-    final Paint fillPaint = Paint()
-      ..style = PaintingStyle.fill;
+
+    final Paint fillPaint = Paint()..style = PaintingStyle.fill;
 
     final Paint borderPaint = Paint()
       ..style = PaintingStyle.stroke
@@ -1165,15 +1314,15 @@ class WheelPainter extends CustomPainter {
 
     for (int i = 0; i < sectors.length; i++) {
       final sector = sectors[i];
-      
+
       // Alternate colors
       fillPaint.color = sector["color"] as Color;
       if (fillPaint.color == AppTheme.cardBg && i % 4 == 2) {
         fillPaint.color = AppTheme.darkBg;
       }
-      
+
       final double startAngle = i * arcAngle;
-      
+
       // Draw arc wedge
       canvas.drawArc(
         Rect.fromCircle(center: center, radius: radius),
@@ -1193,37 +1342,36 @@ class WheelPainter extends CustomPainter {
       // Draw Sector Label
       canvas.save();
       final double middleAngle = startAngle + (arcAngle / 2);
-      
+
       // Move origin to center
       canvas.translate(radius, radius);
       canvas.rotate(middleAngle);
-      
+
       // Draw text
       final label = sector["label"] as String;
       final bool isWin = sector["isWin"] as bool;
-      
       final textPainter = TextPainter(
         text: TextSpan(
           text: label,
           style: GoogleFonts.outfit(
             fontSize: 11,
             fontWeight: FontWeight.w900,
-            color: isWin ? (sector["color"] as Color) : Colors.white54,
+            color: isWin ? Colors.black : Colors.white,
           ),
         ),
         textDirection: TextDirection.ltr,
       );
-      
+
       textPainter.layout();
-      
+
       // Position label inside the wedge radially
       final double offsetRadius = radius * 0.65;
       canvas.translate(offsetRadius, -textPainter.height / 2);
-      
+
       // Rotate label to align outwards
       canvas.rotate(pi / 2);
       textPainter.paint(canvas, Offset(-textPainter.width / 2, 0));
-      
+
       canvas.restore();
     }
   }
@@ -1256,7 +1404,7 @@ class PointerPainter extends CustomPainter {
       ..color = Colors.white.withOpacity(0.6)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.5;
-    
+
     canvas.drawPath(path, borderPaint);
   }
 

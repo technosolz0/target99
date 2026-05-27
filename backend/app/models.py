@@ -71,6 +71,7 @@ class WalletTransaction(Base):
     type = Column(String, nullable=False)  # DEPOSIT, WITHDRAWAL, ENTRY_FEE, PRIZE_WIN, REFERRAL_BONUS
     amount = Column(Float, nullable=False)
     status = Column(String, default="PENDING")  # PENDING, SUCCESS, FAILED
+    utr = Column(String, unique=True, nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     user = relationship("User", back_populates="transactions")

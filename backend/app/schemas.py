@@ -120,6 +120,7 @@ class TransactionResponse(BaseModel):
     type: str
     amount: float
     status: str
+    utr: Optional[str] = None
     created_at: datetime
 
     class Config:
@@ -133,6 +134,7 @@ class SaveBankDetailsRequest(BaseModel):
 
 class DepositRequest(BaseModel):
     amount: float = Field(..., gt=0)
+    utr: Optional[str] = None
 
 class WithdrawalRequest(BaseModel):
     amount: float = Field(..., gt=0)

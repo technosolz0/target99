@@ -61,7 +61,7 @@ class AppState {
 
   AppState({
     this.isAuthLoading = false,
-    this.isSplashLoading = false,
+    this.isSplashLoading = true,
     this.currentUser,
     this.token,
     this.authError,
@@ -201,7 +201,8 @@ class FetchTransactionsEvent extends AppEvent {}
 
 class DepositMoneyEvent extends AppEvent {
   final double amount;
-  DepositMoneyEvent(this.amount);
+  final String? utr;
+  DepositMoneyEvent(this.amount, {this.utr});
 }
 
 class WithdrawMoneyEvent extends AppEvent {
@@ -697,7 +698,10 @@ class AppBloc extends Bloc<AppEvent, AppState> {
     try {
       await _apiClient.post(
         ApiConstants.deposit,
-        data: {'amount': event.amount},
+        data: {
+          'amount': event.amount,
+          if (event.utr != null) 'utr': event.utr,
+        },
       );
       add(LoadProfileEvent());
       add(FetchTransactionsEvent());
@@ -847,7 +851,7 @@ class AppBloc extends Bloc<AppEvent, AppState> {
   Future<void> _onLogout(LogoutEvent event, Emitter<AppState> emit) async {
     await _apiClient.clearTokens();
     await getIt<SecureStorageService>().clearUser();
-    emit(AppState());
+    emit(AppState(isSplashLoading: false));
   }
 
   Future<void> _onAppStarted(
