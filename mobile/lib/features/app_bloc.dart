@@ -11,6 +11,7 @@ import 'package:target99/core/models/contest_model.dart';
 import 'package:target99/core/models/user_model.dart';
 import 'package:target99/core/models/spin_model.dart';
 import 'package:target99/core/network/api_client.dart';
+import 'package:target99/core/network/secure_storage_service.dart';
 import 'package:target99/core/network/remote_config_service.dart';
 import 'package:target99/core/utils/dependency_injection.dart';
 import 'package:target99/core/utils/version_comparer.dart';
@@ -246,6 +247,8 @@ class PlaySpinWheelEvent extends AppEvent {
 
 class FetchSpinHistoryEvent extends AppEvent {}
 
+class ResetSpinEvent extends AppEvent {}
+
 class RegisterFcmTokenEvent extends AppEvent {
   final String fcmToken;
   RegisterFcmTokenEvent(this.fcmToken);
@@ -280,6 +283,7 @@ class AppBloc extends Bloc<AppEvent, AppState> {
     on<RegisterFcmTokenEvent>(_onRegisterFcmToken);
     on<PlaySpinWheelEvent>(_onPlaySpinWheel);
     on<FetchSpinHistoryEvent>(_onFetchSpinHistory);
+    on<ResetSpinEvent>(_onResetSpin);
   }
 
   Future<void> _onSendOtp(SendOtpEvent event, Emitter<AppState> emit) async {
@@ -555,10 +559,11 @@ class AppBloc extends Bloc<AppEvent, AppState> {
     LoadProfileEvent event,
     Emitter<AppState> emit,
   ) async {
-    emit(state.copyWith(isAuthLoading: true));
+    emit(state.copyWith(isAuthLoading: state.currentUser == null));
     try {
       final response = await _apiClient.get(ApiConstants.me);
       final user = UserModel.fromJson(response.data);
+      await getIt<SecureStorageService>().saveUser(user);
       emit(state.copyWith(isAuthLoading: false, currentUser: user));
 
       // Request FCM permission and retrieve token
@@ -841,6 +846,7 @@ class AppBloc extends Bloc<AppEvent, AppState> {
 
   Future<void> _onLogout(LogoutEvent event, Emitter<AppState> emit) async {
     await _apiClient.clearTokens();
+    await getIt<SecureStorageService>().clearUser();
     emit(AppState());
   }
 
@@ -895,15 +901,44 @@ class AppBloc extends Bloc<AppEvent, AppState> {
       // 2. Initialize token security and profile session
       await _apiClient.initializeTokens();
       if (_apiClient.hasToken) {
-        final response = await _apiClient.get(ApiConstants.me);
-        final user = UserModel.fromJson(response.data);
-        emit(
-          state.copyWith(
-            isSplashLoading: false,
-            token: _apiClient.token,
-            currentUser: user,
-          ),
-        );
+        final secureStorage = getIt<SecureStorageService>();
+        // Load cached user profile instantly to avoid black/empty screens
+        final cachedUser = await secureStorage.getUser();
+        if (cachedUser != null) {
+          emit(
+            state.copyWith(
+              isSplashLoading: false,
+              token: _apiClient.token,
+              currentUser: cachedUser,
+            ),
+          );
+        }
+
+        try {
+          final response = await _apiClient.get(ApiConstants.me);
+          final user = UserModel.fromJson(response.data);
+          await secureStorage.saveUser(user);
+          emit(
+            state.copyWith(
+              isSplashLoading: false,
+              token: _apiClient.token,
+              currentUser: user,
+            ),
+          );
+        } catch (e) {
+          // If we had no cached user, show startup loading failure.
+          // Otherwise, allow user to keep using the app with cached details.
+          if (cachedUser == null) {
+            emit(
+              state.copyWith(
+                isSplashLoading: false,
+                token: null,
+                currentUser: null,
+                authError: e.toString().replaceAll('Exception: ', ''),
+              ),
+            );
+          }
+        }
       } else {
         emit(state.copyWith(isSplashLoading: false));
       }
@@ -982,6 +1017,38 @@ class AppBloc extends Bloc<AppEvent, AppState> {
         ),
       );
     }
+  }
+
+  void _onResetSpin(ResetSpinEvent event, Emitter<AppState> emit) {
+    emit(AppState(
+      isAuthLoading: state.isAuthLoading,
+      isSplashLoading: state.isSplashLoading,
+      currentUser: state.currentUser,
+      token: state.token,
+      authError: state.authError,
+      otpSentMessage: state.otpSentMessage,
+      showRegistrationFields: state.showRegistrationFields,
+      isContestsLoading: state.isContestsLoading,
+      contests: state.contests,
+      contestsError: state.contestsError,
+      isWalletLoading: state.isWalletLoading,
+      transactions: state.transactions,
+      walletError: state.walletError,
+      isReferralLoading: state.isReferralLoading,
+      referralDetails: state.referralDetails,
+      referralError: state.referralError,
+      activeLeaderboard: state.activeLeaderboard,
+      isLeaderboardLoading: state.isLeaderboardLoading,
+      isSpinLoading: state.isSpinLoading,
+      latestSpinResult: null,
+      spinHistory: state.spinHistory,
+      spinError: null,
+      updateRequired: state.updateRequired,
+      updateOptional: state.updateOptional,
+      updateUrl: state.updateUrl,
+      serverMinVersion: state.serverMinVersion,
+      serverLatestVersion: state.serverLatestVersion,
+    ));
   }
 
   @override

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:target99/core/theme/app_theme.dart';
+import 'package:target99/core/widgets/custom_button.dart';
+import 'package:target99/core/widgets/custom_text_field.dart';
 import 'package:target99/features/app_bloc.dart';
 import 'package:target99/features/auth/register_screen.dart';
 
@@ -163,50 +165,42 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             const SizedBox(height: 24),
 
-                            // Phone Input
-                            TextField(
+                             // Phone Input
+                            CustomTextField(
                               controller: _phoneController,
+                              labelText: 'Phone Number',
+                              hintText: 'Enter 10-digit number',
                               keyboardType: TextInputType.phone,
                               enabled: !_otpSent,
-                              decoration: const InputDecoration(
-                                labelText: 'Phone Number',
-                                hintText: 'Enter 10-digit number',
-                                prefixIcon: Icon(
-                                  Icons.phone_iphone,
-                                  color: AppTheme.textMuted,
-                                ),
+                              prefixIcon: const Icon(
+                                Icons.phone_iphone,
+                                size: 20,
                               ),
                             ),
                             const SizedBox(height: 16),
 
                             // OTP input if sent
                             if (_otpSent) ...[
-                              TextField(
+                              CustomTextField(
                                 controller: _otpController,
+                                labelText: '6-digit OTP',
+                                hintText: 'Enter OTP',
                                 keyboardType: TextInputType.number,
-                                decoration: const InputDecoration(
-                                  labelText: '6-digit OTP',
-                                  hintText: 'Enter OTP',
-                                  prefixIcon: Icon(
-                                    Icons.lock_outline,
-                                    color: AppTheme.textMuted,
-                                  ),
+                                prefixIcon: const Icon(
+                                  Icons.lock_outline,
+                                  size: 20,
                                 ),
                               ),
                               const SizedBox(height: 24),
                             ],
 
-                            BlocBuilder<AppBloc, AppState>(
+                             BlocBuilder<AppBloc, AppState>(
                               builder: (context, state) {
-                                if (state.isAuthLoading) {
-                                  return const Center(
-                                    child: CircularProgressIndicator(
-                                      color: AppTheme.accentCyan,
-                                    ),
-                                  );
-                                }
-
-                                return ElevatedButton(
+                                return CustomButton(
+                                  text: _otpSent
+                                      ? 'VERIFY & LOG IN'
+                                      : 'GET VERIFICATION CODE',
+                                  isLoading: state.isAuthLoading,
                                   onPressed: () {
                                     final phone = _phoneController.text.trim();
                                     if (phone.isEmpty || phone.length < 10) {
@@ -242,14 +236,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                       );
                                     }
                                   },
-                                  style: ElevatedButton.styleFrom(
-                                    minimumSize: const Size.fromHeight(50),
-                                  ),
-                                  child: Text(
-                                    _otpSent
-                                        ? 'VERIFY & LOG IN'
-                                        : 'GET VERIFICATION CODE',
-                                  ),
                                 );
                               },
                             ),

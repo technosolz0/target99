@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:target99/core/theme/app_theme.dart';
+import 'package:target99/core/widgets/custom_button.dart';
+import 'package:target99/core/widgets/custom_text_field.dart';
 import 'package:target99/features/app_bloc.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -166,64 +168,57 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             ),
                             const SizedBox(height: 24),
 
-                            // First and Last Name Inputs (Only enabled before OTP is sent, or always visible)
-                            TextField(
+                             // First and Last Name Inputs
+                            CustomTextField(
                               controller: _firstNameController,
+                              labelText: 'First Name',
+                              hintText: 'Enter your first name',
                               enabled: !_otpSent,
                               textCapitalization: TextCapitalization.words,
-                              decoration: const InputDecoration(
-                                labelText: 'First Name',
-                                hintText: 'Enter your first name',
-                                prefixIcon: Icon(
-                                  Icons.person_outline,
-                                  color: AppTheme.textMuted,
-                                ),
+                              prefixIcon: const Icon(
+                                Icons.person_outline,
+                                size: 20,
                               ),
                             ),
                             const SizedBox(height: 16),
 
-                            TextField(
+                            CustomTextField(
                               controller: _lastNameController,
+                              labelText: 'Last Name',
+                              hintText: 'Enter your last name',
                               enabled: !_otpSent,
                               textCapitalization: TextCapitalization.words,
-                              decoration: const InputDecoration(
-                                labelText: 'Last Name',
-                                hintText: 'Enter your last name',
-                                prefixIcon: Icon(
-                                  Icons.person_outline,
-                                  color: AppTheme.textMuted,
-                                ),
+                              prefixIcon: const Icon(
+                                Icons.person_outline,
+                                size: 20,
                               ),
                             ),
                             const SizedBox(height: 16),
 
                             // Phone Input
-                            TextField(
+                            CustomTextField(
                               controller: _phoneController,
+                              labelText: 'Phone Number',
+                              hintText: 'Enter 10-digit number',
                               keyboardType: TextInputType.phone,
                               enabled: !_otpSent,
-                              decoration: const InputDecoration(
-                                labelText: 'Phone Number',
-                                hintText: 'Enter 10-digit number',
-                                prefixIcon: Icon(
-                                  Icons.phone_iphone,
-                                  color: AppTheme.textMuted,
-                                ),
+                              prefixIcon: const Icon(
+                                Icons.phone_iphone,
+                                size: 20,
                               ),
                             ),
                             const SizedBox(height: 16),
 
                             // Referral Input (optional)
                             if (!_otpSent) ...[
-                              TextField(
+                              CustomTextField(
                                 controller: _referralController,
-                                decoration: const InputDecoration(
-                                  labelText: 'Referral Code (Optional)',
-                                  hintText: 'e.g. T99_WXYZ',
-                                  prefixIcon: Icon(
-                                    Icons.card_giftcard,
-                                    color: AppTheme.textMuted,
-                                  ),
+                                labelText: 'Referral Code (Optional)',
+                                hintText: 'e.g. T99_WXYZ',
+                                textCapitalization: TextCapitalization.characters,
+                                prefixIcon: const Icon(
+                                  Icons.card_giftcard,
+                                  size: 20,
                                 ),
                               ),
                               const SizedBox(height: 24),
@@ -231,64 +226,46 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                             // OTP input if sent
                             if (_otpSent) ...[
-                              TextField(
+                              CustomTextField(
                                 controller: _otpController,
+                                labelText: '6-digit OTP',
+                                hintText: 'Enter OTP',
                                 keyboardType: TextInputType.number,
-                                decoration: const InputDecoration(
-                                  labelText: '6-digit OTP',
-                                  hintText: 'Enter OTP',
-                                  prefixIcon: Icon(
-                                    Icons.lock_outline,
-                                    color: AppTheme.textMuted,
-                                  ),
+                                prefixIcon: const Icon(
+                                  Icons.lock_outline,
+                                  size: 20,
                                 ),
                               ),
                               const SizedBox(height: 24),
                             ],
 
-                            BlocBuilder<AppBloc, AppState>(
+                             BlocBuilder<AppBloc, AppState>(
                               builder: (context, state) {
-                                if (state.isAuthLoading) {
-                                  return const Center(
-                                    child: CircularProgressIndicator(
-                                      color: AppTheme.accentCyan,
-                                    ),
-                                  );
-                                }
-
-                                return ElevatedButton(
+                                return CustomButton(
+                                  text: _otpSent
+                                      ? 'VERIFY & REGISTER'
+                                      : 'GET VERIFICATION CODE',
+                                  isLoading: state.isAuthLoading,
                                   onPressed: () {
-                                    final firstName = _firstNameController.text
-                                        .trim();
-                                    final lastName = _lastNameController.text
-                                        .trim();
+                                    final firstName = _firstNameController.text.trim();
+                                    final lastName = _lastNameController.text.trim();
                                     final phone = _phoneController.text.trim();
 
                                     if (firstName.isEmpty || lastName.isEmpty) {
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
+                                      ScaffoldMessenger.of(context).showSnackBar(
                                         const SnackBar(
-                                          content: Text(
-                                            'Please enter both your first and last name',
-                                          ),
-                                          backgroundColor:
-                                              AppTheme.accentPurple,
+                                          content: Text('Please enter both your first and last name'),
+                                          backgroundColor: AppTheme.accentPurple,
                                         ),
                                       );
                                       return;
                                     }
 
                                     if (phone.isEmpty || phone.length < 10) {
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
+                                      ScaffoldMessenger.of(context).showSnackBar(
                                         const SnackBar(
-                                          content: Text(
-                                            'Please enter a valid 10-digit phone number',
-                                          ),
-                                          backgroundColor:
-                                              AppTheme.accentPurple,
+                                          content: Text('Please enter a valid 10-digit phone number'),
+                                          backgroundColor: AppTheme.accentPurple,
                                         ),
                                       );
                                       return;
@@ -300,18 +277,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                       );
                                     } else {
                                       final otp = _otpController.text.trim();
-                                      final ref = _referralController.text
-                                          .trim();
+                                      final ref = _referralController.text.trim();
                                       if (otp.length < 6) {
-                                        ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
+                                        ScaffoldMessenger.of(context).showSnackBar(
                                           const SnackBar(
-                                            content: Text(
-                                              'Please enter a valid 6-digit OTP',
-                                            ),
-                                            backgroundColor:
-                                                AppTheme.accentPurple,
+                                            content: Text('Please enter a valid 6-digit OTP'),
+                                            backgroundColor: AppTheme.accentPurple,
                                           ),
                                         );
                                         return;
@@ -321,23 +292,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                         VerifyOtpEvent(
                                           phone,
                                           otp,
-                                          referredBy: ref.isNotEmpty
-                                              ? ref
-                                              : null,
+                                          referredBy: ref.isNotEmpty ? ref : null,
                                           firstName: firstName,
                                           lastName: lastName,
                                         ),
                                       );
                                     }
                                   },
-                                  style: ElevatedButton.styleFrom(
-                                    minimumSize: const Size.fromHeight(50),
-                                  ),
-                                  child: Text(
-                                    _otpSent
-                                        ? 'VERIFY & REGISTER'
-                                        : 'GET VERIFICATION CODE',
-                                  ),
                                 );
                               },
                             ),
