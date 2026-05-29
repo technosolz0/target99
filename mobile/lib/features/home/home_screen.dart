@@ -450,28 +450,28 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           )
                         : isJoined
-                            ? ElevatedButton(
-                                onPressed: () {
-                                  _showLanguageSelectionSheet(context, contest);
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppTheme.accentPurple,
-                                ),
-                                child: const Text(
-                                  'PLAY QUIZ NOW',
-                                  style: TextStyle(color: Colors.white),
-                                ),
-                              )
-                            : ElevatedButton(
-                                onPressed: contest.isFull
-                                    ? null
-                                    : () {
-                                        _showJoinConfirmation(context, contest);
-                                      },
-                                child: Text(
-                                  contest.isFull ? 'SLOTS FULL' : 'JOIN CONTEST',
-                                ),
-                              ),
+                        ? ElevatedButton(
+                            onPressed: () {
+                              _showLanguageSelectionSheet(context, contest);
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppTheme.accentPurple,
+                            ),
+                            child: const Text(
+                              'PLAY QUIZ NOW',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                          )
+                        : ElevatedButton(
+                            onPressed: contest.isFull
+                                ? null
+                                : () {
+                                    _showJoinConfirmation(context, contest);
+                                  },
+                            child: Text(
+                              contest.isFull ? 'SLOTS FULL' : 'JOIN CONTEST',
+                            ),
+                          ),
                   ),
                 ],
               ),
@@ -845,32 +845,13 @@ class _HomeScreenState extends State<HomeScreen> {
                         DepositBottomSheet.show(
                           context,
                           defaultAmount: shortfall,
-                          onSuccess: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  'Deposited ₹${shortfall.ceil()} successfully! Re-opening registration...',
-                                ),
-                                backgroundColor: AppTheme.accentEmerald,
-                              ),
-                            );
-
-                            Future.delayed(
-                              const Duration(milliseconds: 600),
-                              () {
-                                if (context.mounted) {
-                                  _showJoinConfirmation(context, contest);
-                                }
-                              },
-                            );
-                          },
                         );
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppTheme.accentCyan,
                         foregroundColor: Colors.black,
                       ),
-                      child: Text('ADD ₹${shortfall.ceil()} VIA RAZORPAY / UPI'),
+                      child: Text('ADD ₹${shortfall.ceil()} VIA UPI / BANK'),
                     ),
                   ] else ...[
                     const SizedBox(height: 16),
@@ -966,4 +947,3 @@ class _ContestCountdownState extends State<ContestCountdown> {
     );
   }
 }
-

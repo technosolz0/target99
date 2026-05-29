@@ -5,7 +5,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:target99/core/theme/app_theme.dart';
 import 'package:target99/core/network/remote_config_service.dart';
 import 'package:target99/core/utils/dependency_injection.dart';
-import 'package:target99/core/utils/razorpay_service.dart';
 import 'package:target99/features/app_bloc.dart';
 
 class DepositBottomSheet extends StatefulWidget {
@@ -38,11 +37,9 @@ class DepositBottomSheet extends StatefulWidget {
 }
 
 class _DepositBottomSheetState extends State<DepositBottomSheet> {
-  late final TextEditingController _razorpayAmountController;
   late final TextEditingController _manualAmountController;
   late final TextEditingController _utrController;
 
-  int _activeTab = 0; // 0 for Razorpay (Instant), 1 for UPI/Bank (Manual)
   int _activeManualSubTab = 0; // 0 for UPI, 1 for Bank Details
 
   @override
@@ -51,14 +48,12 @@ class _DepositBottomSheetState extends State<DepositBottomSheet> {
     final initialAmtStr = widget.defaultAmount != null
         ? widget.defaultAmount!.ceil().toString()
         : '500';
-    _razorpayAmountController = TextEditingController(text: initialAmtStr);
     _manualAmountController = TextEditingController(text: initialAmtStr);
     _utrController = TextEditingController();
   }
 
   @override
   void dispose() {
-    _razorpayAmountController.dispose();
     _manualAmountController.dispose();
     _utrController.dispose();
     super.dispose();
@@ -66,11 +61,7 @@ class _DepositBottomSheetState extends State<DepositBottomSheet> {
 
   void _selectPresetAmount(double amount) {
     setState(() {
-      if (_activeTab == 0) {
-        _razorpayAmountController.text = amount.toInt().toString();
-      } else {
-        _manualAmountController.text = amount.toInt().toString();
-      }
+      _manualAmountController.text = amount.toInt().toString();
     });
   }
 
@@ -110,7 +101,7 @@ class _DepositBottomSheetState extends State<DepositBottomSheet> {
                 ),
                 const SizedBox(height: 20),
                 Text(
-                  'Add Money to Wallet',
+                  'Instant Manual Payout',
                   textAlign: TextAlign.center,
                   style: GoogleFonts.outfit(
                     fontSize: 22,
@@ -121,53 +112,51 @@ class _DepositBottomSheetState extends State<DepositBottomSheet> {
                 const SizedBox(height: 6),
                 Text(
                   widget.defaultAmount != null
-                      ? 'You need ₹${widget.defaultAmount!.toStringAsFixed(2)} more to complete this transaction.'
-                      : 'Choose your preferred deposit method to add funds to your wallet.',
+                      ? 'Transfer shortfall of ₹${widget.defaultAmount!.toStringAsFixed(2)} to Admin details below. After payment is complete, enter UTR number to verify.'
+                      : 'Transfer payment to the Admin details below. After payment is complete, enter the transaction UTR number to instantly credit your wallet.',
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     color: AppTheme.textMuted,
-                    fontSize: 12,
+                    fontSize: 11,
                   ),
                 ),
                 const SizedBox(height: 20),
 
-                // Main Tab Switcher (Razorpay vs Manual)
+                // Manual Sub-Switcher
                 Container(
-                  padding: const EdgeInsets.all(4),
+                  padding: const EdgeInsets.all(3),
                   decoration: BoxDecoration(
                     color: AppTheme.cardBg,
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: AppTheme.borderCol),
                   ),
                   child: Row(
                     children: [
                       Expanded(
                         child: GestureDetector(
-                          onTap: () => setState(() => _activeTab = 0),
+                          onTap: () => setState(() => _activeManualSubTab = 0),
                           child: Container(
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             decoration: BoxDecoration(
-                              color: _activeTab == 0
+                              color: _activeManualSubTab == 0
                                   ? AppTheme.accentCyan.withOpacity(0.1)
                                   : Colors.transparent,
-                              borderRadius: BorderRadius.circular(12),
-                              border: _activeTab == 0
+                              borderRadius: BorderRadius.circular(8),
+                              border: _activeManualSubTab == 0
                                   ? Border.all(
-                                      color: AppTheme.accentCyan.withOpacity(
-                                        0.5,
-                                      ),
+                                      color: AppTheme.accentCyan.withOpacity(0.5),
                                     )
                                   : null,
                             ),
                             child: Center(
                               child: Text(
-                                'Instant (Razorpay)',
+                                'UPI Transfer',
                                 style: TextStyle(
-                                  color: _activeTab == 0
-                                      ? AppTheme.accentCyan
-                                      : Colors.white60,
+                                  fontSize: 12,
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 13,
+                                  color: _activeManualSubTab == 0
+                                      ? AppTheme.accentCyan
+                                      : AppTheme.textMuted,
                                 ),
                               ),
                             ),
@@ -176,31 +165,29 @@ class _DepositBottomSheetState extends State<DepositBottomSheet> {
                       ),
                       Expanded(
                         child: GestureDetector(
-                          onTap: () => setState(() => _activeTab = 1),
+                          onTap: () => setState(() => _activeManualSubTab = 1),
                           child: Container(
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             decoration: BoxDecoration(
-                              color: _activeTab == 1
+                              color: _activeManualSubTab == 1
                                   ? AppTheme.accentPurple.withOpacity(0.1)
                                   : Colors.transparent,
-                              borderRadius: BorderRadius.circular(12),
-                              border: _activeTab == 1
+                              borderRadius: BorderRadius.circular(8),
+                              border: _activeManualSubTab == 1
                                   ? Border.all(
-                                      color: AppTheme.accentPurple.withOpacity(
-                                        0.5,
-                                      ),
+                                      color: AppTheme.accentPurple.withOpacity(0.5),
                                     )
                                   : null,
                             ),
                             child: Center(
                               child: Text(
-                                'Manual (UPI/Bank)',
+                                'Bank Account',
                                 style: TextStyle(
-                                  color: _activeTab == 1
-                                      ? AppTheme.accentPurple
-                                      : Colors.white60,
+                                  fontSize: 12,
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 13,
+                                  color: _activeManualSubTab == 1
+                                      ? AppTheme.accentPurple
+                                      : AppTheme.textMuted,
                                 ),
                               ),
                             ),
@@ -210,449 +197,308 @@ class _DepositBottomSheetState extends State<DepositBottomSheet> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
 
-                // Content for Razorpay (Instant)
-                if (_activeTab == 0) ...[
-                  // Razorpay Input Block
-                  TextField(
-                    controller: _razorpayAmountController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'Deposit Amount (₹)',
-                      hintText: 'Enter amount to deposit',
-                      prefixText: '₹ ',
+                // UPI Card
+                if (_activeManualSubTab == 0)
+                  Card(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      side: const BorderSide(color: AppTheme.borderCol),
                     ),
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Quick presets
-                  _buildPresetsRow(),
-                  const SizedBox(height: 24),
-
-                  ElevatedButton(
-                    onPressed: () {
-                      final double? amt = double.tryParse(
-                        _razorpayAmountController.text.trim(),
-                      );
-                      if (amt == null || amt <= 0.0) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'Please enter a valid deposit amount.',
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const Text(
+                            'OFFICIAL UPI ADDRESS',
+                            style: TextStyle(
+                              fontSize: 8,
+                              color: AppTheme.textMuted,
+                              fontWeight: FontWeight.bold,
                             ),
-                            backgroundColor: AppTheme.accentRed,
                           ),
-                        );
-                        return;
-                      }
-
-                      // Close this dialog and open Razorpay checkout
-                      Navigator.pop(context);
-
-                      RazorpayService.openRazorpayPaymentSheet(
-                        context: context,
-                        amount: amt,
-                        onSuccess: () {
-                          if (widget.onSuccess != null) {
-                            widget.onSuccess!();
-                          }
-                        },
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.accentCyan,
-                      foregroundColor: Colors.black,
-                      minimumSize: const Size(double.infinity, 52),
-                    ),
-                    child: const Text('PAY INSTANTLY VIA RAZORPAY'),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.lock_outline_rounded,
-                        color: AppTheme.accentEmerald.withOpacity(0.6),
-                        size: 12,
+                          const SizedBox(height: 6),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: SelectableText(
+                                  upiId,
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.copy,
+                                  color: AppTheme.accentCyan,
+                                  size: 18,
+                                ),
+                                onPressed: () {
+                                  Clipboard.setData(
+                                    ClipboardData(text: upiId),
+                                  );
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'UPI ID copied to clipboard.',
+                                      ),
+                                      backgroundColor: AppTheme.accentCyan,
+                                    ),
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Secured by Razorpay. Auto-credits instantly.',
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: AppTheme.accentEmerald.withOpacity(0.7),
-                        ),
+                    ),
+                  ),
+
+                // Bank Card
+                if (_activeManualSubTab == 1)
+                  Card(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      side: const BorderSide(color: AppTheme.borderCol),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        children: [
+                          _buildDetailRow(context, 'BANK NAME', bankName),
+                          const Divider(
+                            color: AppTheme.borderCol,
+                            height: 16,
+                          ),
+                          _buildDetailRow(context, 'HOLDER NAME', bankHolder),
+                          const Divider(
+                            color: AppTheme.borderCol,
+                            height: 16,
+                          ),
+                          _buildDetailRow(
+                            context,
+                            'ACCOUNT NUMBER',
+                            bankAccount,
+                          ),
+                          const Divider(
+                            color: AppTheme.borderCol,
+                            height: 16,
+                          ),
+                          _buildDetailRow(context, 'IFSC CODE', bankIfsc),
+                        ],
+                      ),
+                    ),
+                  ),
+                const SizedBox(height: 16),
+
+                // Support block
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppTheme.cardBg,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppTheme.borderCol),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const Row(
+                        children: [
+                          Icon(
+                            Icons.support_agent,
+                            color: AppTheme.accentAmber,
+                            size: 16,
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            'ADMIN SUPPORT & QUERIES',
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.accentAmber,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Phone: $supportPhone',
+                            style: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          TextButton(
+                            style: TextButton.styleFrom(
+                              padding: EdgeInsets.zero,
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            onPressed: () {
+                              Clipboard.setData(
+                                ClipboardData(text: supportPhone),
+                              );
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Support phone copied.'),
+                                  backgroundColor: AppTheme.accentAmber,
+                                ),
+                              );
+                            },
+                            child: const Text(
+                              'COPY',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: AppTheme.accentAmber,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Email: $supportEmail',
+                            style: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          TextButton(
+                            style: TextButton.styleFrom(
+                              padding: EdgeInsets.zero,
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            onPressed: () {
+                              Clipboard.setData(
+                                ClipboardData(text: supportEmail),
+                              );
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Support email copied.'),
+                                  backgroundColor: AppTheme.accentAmber,
+                                ),
+                              );
+                            },
+                            child: const Text(
+                              'COPY',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: AppTheme.accentAmber,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ],
+                ),
+                const SizedBox(height: 20),
 
-                // Content for Manual Transfer (UPI/Bank)
-                if (_activeTab == 1) ...[
-                  // Manual Sub-Switcher
-                  Container(
-                    padding: const EdgeInsets.all(3),
-                    decoration: BoxDecoration(
-                      color: AppTheme.darkBg,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppTheme.borderCol),
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: GestureDetector(
-                            onTap: () =>
-                                setState(() => _activeManualSubTab = 0),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 8),
-                              decoration: BoxDecoration(
-                                color: _activeManualSubTab == 0
-                                    ? AppTheme.cardBg
-                                    : Colors.transparent,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  'UPI Address',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                    color: _activeManualSubTab == 0
-                                        ? Colors.white
-                                        : AppTheme.textMuted,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        Expanded(
-                          child: GestureDetector(
-                            onTap: () =>
-                                setState(() => _activeManualSubTab = 1),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 8),
-                              decoration: BoxDecoration(
-                                color: _activeManualSubTab == 1
-                                    ? AppTheme.cardBg
-                                    : Colors.transparent,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  'Bank Account',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                    color: _activeManualSubTab == 1
-                                        ? Colors.white
-                                        : AppTheme.textMuted,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                // Inputs Block
+                const Text(
+                  'SUBMIT PAYMENT RECEIPT',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.textMuted,
+                    letterSpacing: 1,
                   ),
-                  const SizedBox(height: 16),
-
-                  // UPI Card
-                  if (_activeManualSubTab == 0)
-                    Card(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        side: const BorderSide(color: AppTheme.borderCol),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            const Text(
-                              'OFFICIAL UPI ADDRESS',
-                              style: TextStyle(
-                                fontSize: 8,
-                                color: AppTheme.textMuted,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Expanded(
-                                  child: SelectableText(
-                                    upiId,
-                                    style: GoogleFonts.outfit(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w700,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ),
-                                IconButton(
-                                  icon: const Icon(
-                                    Icons.copy,
-                                    color: AppTheme.accentCyan,
-                                    size: 18,
-                                  ),
-                                  onPressed: () {
-                                    Clipboard.setData(
-                                      ClipboardData(text: upiId),
-                                    );
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
-                                          'UPI ID copied to clipboard.',
-                                        ),
-                                        backgroundColor: AppTheme.accentCyan,
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                  // Bank Card
-                  if (_activeManualSubTab == 1)
-                    Card(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        side: const BorderSide(color: AppTheme.borderCol),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          children: [
-                            _buildDetailRow(context, 'BANK NAME', bankName),
-                            const Divider(
-                              color: AppTheme.borderCol,
-                              height: 16,
-                            ),
-                            _buildDetailRow(context, 'HOLDER NAME', bankHolder),
-                            const Divider(
-                              color: AppTheme.borderCol,
-                              height: 16,
-                            ),
-                            _buildDetailRow(
-                              context,
-                              'ACCOUNT NUMBER',
-                              bankAccount,
-                            ),
-                            const Divider(
-                              color: AppTheme.borderCol,
-                              height: 16,
-                            ),
-                            _buildDetailRow(context, 'IFSC CODE', bankIfsc),
-                          ],
-                        ),
-                      ),
-                    ),
-                  const SizedBox(height: 16),
-
-                  // Support block
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: AppTheme.cardBg,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppTheme.borderCol),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const Row(
-                          children: [
-                            Icon(
-                              Icons.support_agent,
-                              color: AppTheme.accentAmber,
-                              size: 16,
-                            ),
-                            SizedBox(width: 8),
-                            Text(
-                              'ADMIN SUPPORT & QUERIES',
-                              style: TextStyle(
-                                fontSize: 9,
-                                fontWeight: FontWeight.bold,
-                                color: AppTheme.accentAmber,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Phone: $supportPhone',
-                              style: const TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            TextButton(
-                              style: TextButton.styleFrom(
-                                padding: EdgeInsets.zero,
-                                minimumSize: Size.zero,
-                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              ),
-                              onPressed: () {
-                                Clipboard.setData(
-                                  ClipboardData(text: supportPhone),
-                                );
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Support phone copied.'),
-                                    backgroundColor: AppTheme.accentAmber,
-                                  ),
-                                );
-                              },
-                              child: const Text(
-                                'COPY',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  color: AppTheme.accentAmber,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Email: $supportEmail',
-                              style: const TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            TextButton(
-                              style: TextButton.styleFrom(
-                                padding: EdgeInsets.zero,
-                                minimumSize: Size.zero,
-                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              ),
-                              onPressed: () {
-                                Clipboard.setData(
-                                  ClipboardData(text: supportEmail),
-                                );
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Support email copied.'),
-                                    backgroundColor: AppTheme.accentAmber,
-                                  ),
-                                );
-                              },
-                              child: const Text(
-                                'COPY',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  color: AppTheme.accentAmber,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _manualAmountController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Amount Paid (₹)',
+                    hintText: 'Enter amount paid',
+                    prefixText: '₹ ',
                   ),
-                  const SizedBox(height: 20),
-
-                  // Inputs Block
-                  TextField(
-                    controller: _manualAmountController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'Amount Paid (₹)',
-                      hintText: 'Enter amount paid',
-                      prefixText: '₹ ',
-                    ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _utrController,
+                  keyboardType: TextInputType.number,
+                  maxLength: 12,
+                  decoration: const InputDecoration(
+                    labelText: 'UTR / Transaction ID',
+                    hintText: '12-digit payment transaction number',
+                    counterText: '',
                   ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _utrController,
-                    keyboardType: TextInputType.number,
-                    maxLength: 12,
-                    decoration: const InputDecoration(
-                      labelText: 'UTR / Transaction ID',
-                      hintText: '12-digit payment transaction number',
-                      counterText: '',
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildPresetsRow(),
-                  const SizedBox(height: 24),
+                ),
+                const SizedBox(height: 12),
+                _buildPresetsRow(),
+                const SizedBox(height: 24),
 
-                  ElevatedButton(
-                    onPressed: () {
-                      final double? amt = double.tryParse(
-                        _manualAmountController.text.trim(),
-                      );
-                      final String utr = _utrController.text.trim();
+                ElevatedButton(
+                  onPressed: () {
+                    final double? amt = double.tryParse(
+                      _manualAmountController.text.trim(),
+                    );
+                    final String utr = _utrController.text.trim();
 
-                      if (amt == null || amt <= 0.0) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Please enter a valid amount.'),
-                            backgroundColor: AppTheme.accentRed,
-                          ),
-                        );
-                        return;
-                      }
-                      if (utr.length != 12) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'Please enter a valid 12-digit UTR/Reference ID.',
-                            ),
-                            backgroundColor: AppTheme.accentRed,
-                          ),
-                        );
-                        return;
-                      }
-
-                      // Close bottom sheet
-                      Navigator.pop(context);
-
-                      // Dispatch manual deposit
-                      context.read<AppBloc>().add(
-                        DepositMoneyEvent(amt, utr: utr),
-                      );
-
+                    if (amt == null || amt <= 0.0) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'Deposit request of ₹${amt.toStringAsFixed(2)} submitted successfully for verification! (UTR: $utr)',
-                          ),
-                          backgroundColor: AppTheme.accentEmerald,
-                          duration: const Duration(seconds: 4),
+                        const SnackBar(
+                          content: Text('Please enter a valid amount.'),
+                          backgroundColor: AppTheme.accentRed,
                         ),
                       );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.accentEmerald,
-                      foregroundColor: Colors.black,
-                      minimumSize: const Size(double.infinity, 52),
-                    ),
-                    child: const Text('I HAVE PAID - CONFIRM DEPOSIT'),
+                      return;
+                    }
+                    if (utr.length != 12) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Please enter a valid 12-digit UTR/Reference ID.',
+                          ),
+                          backgroundColor: AppTheme.accentRed,
+                        ),
+                      );
+                      return;
+                    }
+
+                    // Close bottom sheet
+                    Navigator.pop(context);
+
+                    // Dispatch manual deposit
+                    context.read<AppBloc>().add(
+                      DepositMoneyEvent(amt, utr: utr),
+                    );
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          'Deposit request of ₹${amt.toStringAsFixed(2)} submitted successfully for verification! (UTR: $utr)',
+                        ),
+                        backgroundColor: AppTheme.accentEmerald,
+                        duration: const Duration(seconds: 4),
+                      ),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.accentEmerald,
+                    foregroundColor: Colors.black,
+                    minimumSize: const Size(double.infinity, 52),
                   ),
-                ],
+                  child: const Text('I HAVE PAID - CONFIRM DEPOSIT'),
+                ),
               ],
             ),
           ),
