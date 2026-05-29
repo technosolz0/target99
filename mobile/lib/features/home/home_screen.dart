@@ -6,7 +6,7 @@ import 'package:target99/core/theme/app_theme.dart';
 import 'package:target99/core/models/contest_model.dart';
 import 'package:target99/features/app_bloc.dart';
 import 'package:target99/features/contest/quiz_screen.dart';
-import 'package:target99/core/utils/razorpay_service.dart';
+import 'package:target99/core/widgets/deposit_bottom_sheet.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -842,17 +842,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     ElevatedButton(
                       onPressed: () {
                         Navigator.pop(ctx);
-
-                        final depositAmount = shortfall.ceilToDouble();
-
-                        RazorpayService.openRazorpayPaymentSheet(
-                          context: context,
-                          amount: depositAmount,
+                        DepositBottomSheet.show(
+                          context,
+                          defaultAmount: shortfall,
                           onSuccess: () {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(
-                                  'Deposited ₹${depositAmount.toInt()} successfully! Re-opening registration...',
+                                  'Deposited ₹${shortfall.ceil()} successfully! Re-opening registration...',
                                 ),
                                 backgroundColor: AppTheme.accentEmerald,
                               ),
@@ -873,7 +870,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         backgroundColor: AppTheme.accentCyan,
                         foregroundColor: Colors.black,
                       ),
-                      child: Text('ADD ₹${shortfall.ceil()} VIA RAZORPAY'),
+                      child: Text('ADD ₹${shortfall.ceil()} VIA RAZORPAY / UPI'),
                     ),
                   ] else ...[
                     const SizedBox(height: 16),
