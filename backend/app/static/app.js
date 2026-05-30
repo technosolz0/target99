@@ -284,7 +284,7 @@ function setupEventHandlers() {
             const localOffset = new Date().getTimezoneOffset() * 60000; // in ms
             const localISOTime = new Date(Date.now() + 2 * 60 * 60 * 1000 - localOffset).toISOString().slice(0, 16);
             document.getElementById('m-start-time').value = localISOTime;
-            
+
             const localEndISOTime = new Date(Date.now() + 3 * 60 * 60 * 1000 - localOffset).toISOString().slice(0, 16);
             document.getElementById('m-end-time').value = localEndISOTime;
 
@@ -1257,7 +1257,7 @@ async function loadSpinEngineData() {
             document.getElementById('spin-stat-winnings').innerText = `₹${stats.total_winnings_paid.toFixed(2)}`;
             document.getElementById('spin-stat-profit').innerText = `₹${stats.platform_net_profit.toFixed(2)}`;
             document.getElementById('spin-stat-rtp').innerText = `${stats.payout_ratio.toFixed(2)}%`;
-            
+
             const profitEl = document.getElementById('spin-stat-profit');
             if (stats.platform_net_profit < 0) {
                 profitEl.style.color = 'var(--error)';
@@ -1299,7 +1299,7 @@ async function loadRtpSettings() {
         const res = await fetch(`${API_BASE}/admin/rtp`);
         if (!res.ok) throw new Error("Failed to load RTP data.");
         state.rtp_settings = await res.json();
-        
+
         // Update JSON editor with currently selected tier range
         const tierSelect = document.getElementById('rtp-tier-select');
         if (tierSelect) {
@@ -1325,15 +1325,15 @@ async function loadSuspiciousUsers() {
         const res = await fetch(`${API_BASE}/admin/suspicious-users`);
         if (!res.ok) throw new Error("Failed to load suspicious users.");
         const list = await res.json();
-        
+
         const tbody = document.getElementById('suspicious-spins-table-body');
         if (!tbody) return;
-        
+
         if (list.length === 0) {
             tbody.innerHTML = `<tr><td colspan="4" class="table-placeholder">No suspicious activity detected.</td></tr>`;
             return;
         }
-        
+
         tbody.innerHTML = list.map(u => {
             const netProfit = u.total_win - u.total_bet;
             return `
@@ -1362,15 +1362,15 @@ async function loadSpinLogs() {
         const res = await fetch(`${API_BASE}/admin/spin/logs`);
         if (!res.ok) throw new Error("Failed to load spin logs.");
         const logs = await res.json();
-        
+
         const tbody = document.getElementById('spin-logs-table-body');
         if (!tbody) return;
-        
+
         if (logs.length === 0) {
             tbody.innerHTML = `<tr><td colspan="7" class="table-placeholder">No spins logged yet.</td></tr>`;
             return;
         }
-        
+
         tbody.innerHTML = logs.map(s => {
             const dateStr = new Date(s.created_at).toLocaleString();
             const winStyle = s.win_amount > 0 ? 'color: var(--success)' : 'color: var(--text-muted)';
@@ -1418,13 +1418,13 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
             const tierId = parseInt(document.getElementById('rtp-tier-select').value);
             const rawJson = document.getElementById('rtp-json-editor').value.trim();
-            
+
             if (isNaN(tierId) || !rawJson) return;
-            
+
             const btn = rtpForm.querySelector('button[type="submit"]');
             btn.disabled = true;
             btn.innerText = "Saving settings...";
-            
+
             try {
                 // Double check JSON syntax on client
                 const parsed = JSON.parse(rawJson);
@@ -1432,7 +1432,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (Math.abs(sum - 100) > 1.0) {
                     throw new Error(`Total probability weights must sum to exactly 100%. (Current sum: ${sum}%)`);
                 }
-                
+
                 const response = await fetch(`${API_BASE}/admin/rtp/${tierId}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
@@ -1441,12 +1441,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         enabled: true
                     })
                 });
-                
+
                 if (!response.ok) {
                     const errText = await response.text();
                     throw new Error(errText || "Failed to save settings.");
                 }
-                
+
                 showToast("RTP configuration saved and live on production!");
                 loadSpinEngineData();
             } catch (err) {
@@ -1465,13 +1465,13 @@ document.addEventListener('DOMContentLoaded', () => {
         btnToggleMaintenance.addEventListener('click', async () => {
             const nextMode = !state.maintenance_active;
             btnToggleMaintenance.disabled = true;
-            
+
             try {
                 const res = await fetch(`${API_BASE}/admin/maintenance?enabled=${nextMode}`, {
                     method: 'POST'
                 });
                 if (!res.ok) throw new Error("Failed to change maintenance status.");
-                
+
                 state.maintenance_active = nextMode;
                 btnToggleMaintenance.innerText = state.maintenance_active ? "Unlock Game Access" : "Lock Game Access";
                 btnToggleMaintenance.style.backgroundColor = state.maintenance_active ? 'var(--success)' : 'var(--error)';
@@ -1700,8 +1700,8 @@ window.completePuzzleContest = completePuzzleContest;
 const WORD_PUZZLE_TEMPLATES = {
     UNSCRAMBLE: { scrambled: "DART" },
     MISSING_LETTERS: { pattern: "D_R_" },
-    WORD_SEARCH: { grid: [["B","L","O","C"],["X","Y","Z","A"],["Q","W","E","R"],["A","S","D","F"]] },
-    CROSSWORD: { grid: [["D","A","R","T"]], row: 0, col: 0, direction: "horizontal" }
+    WORD_SEARCH: { grid: [["B", "L", "O", "C"], ["X", "Y", "Z", "A"], ["Q", "W", "E", "R"], ["A", "S", "D", "F"]] },
+    CROSSWORD: { grid: [["D", "A", "R", "T"]], row: 0, col: 0, direction: "horizontal" }
 };
 
 async function loadWordManager() {
@@ -1719,7 +1719,7 @@ async function loadWordManager() {
         if (select) {
             select.innerHTML = '<option value="">-- Choose a Word Contest --</option>' +
                 contests.map(c => `<option value="${c.id}">${c.title} (ID: ${c.id})</option>`).join('');
-            
+
             // Reset view
             document.getElementById('wqc-questions-section').style.display = 'none';
             document.getElementById('wqc-questions-list').innerHTML = '';
@@ -1834,10 +1834,10 @@ async function loadWordManagerQuestions(contestId) {
 function addWQCQuestionRow(id = null, gameType = 'UNSCRAMBLE', difficulty = 'EASY', puzzleData = '', clues = '', correctAnswer = '', pointsReward = 100) {
     const listContainer = document.getElementById('wqc-questions-list');
     if (!listContainer) return;
-    
+
     const card = document.createElement('div');
     card.className = 'quiz-question-card';
-    
+
     let puzzleDataStr = typeof puzzleData === 'object' ? JSON.stringify(puzzleData, null, 4) : puzzleData;
     let cluesStr = typeof clues === 'object' ? JSON.stringify(clues) : clues || '';
 
