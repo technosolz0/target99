@@ -99,3 +99,21 @@ def send_push_to_all(db: Session, title: str, body: str, data: dict = None) -> i
         print(f"\n📢 [MOCK PUSH NOTIFICATION BROADCAST] (No users have registered FCM tokens yet)\n   Title: {title}\n   Body: {body}\n")
         
     return sent_count
+
+
+def send_push_to_all_background(db: Session, title: str, body: str, data: dict = None):
+    """
+    Broadcasts a push notification to all users who have an FCM token registered in a background thread.
+    This prevents blocking the FastAPI request flow during network calls to FCM.
+    """
+    tokens = [u.fcm_token for u in db.query(User).filter(User.fcm_token != None).all()]
+    if not tokens:
+        print(f"\n📢 [MOCK PUSH NOTIFICATION BROADCAST] (No users have registered FCM tokens yet)\n   Title: {title}\n   Body: {body}\n")
+        return
+
+    import threading
+    def broadcast():
+        for token in tokens:
+            send_push_to_token(token, title, body, data)
+
+    threading.Thread(target=broadcast, daemon=True).start()

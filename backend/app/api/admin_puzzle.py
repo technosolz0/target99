@@ -40,7 +40,19 @@ def create_puzzle_contest(
     db.add(contest)
     db.commit()
     db.refresh(contest)
-    
+
+    # Send push notification to all users
+    try:
+        from app.core.notifications import send_push_to_all_background
+        send_push_to_all_background(
+            db,
+            title="🖼️ New Image Puzzle Contest!",
+            body=f"Join the new '{contest.title}' contest now! Entry fee is only ₹{contest.entry_fee:.2f}, Prize Pool: ₹{contest.prize_pool:.2f}.",
+            data={"type": "contest_created", "contest_id": str(contest.id), "category": "PUZZLE"}
+        )
+    except Exception as e:
+        print(f"Failed to trigger background push notification: {e}")
+
     return contest
 
 @router.post("/contests/{contest_id}/complete")

@@ -137,6 +137,19 @@ def create_contest(request: ContestCreate, db: Session = Depends(get_db)):
     db.add(contest)
     db.commit()
     db.refresh(contest)
+
+    # Send push notification to all users
+    try:
+        from app.core.notifications import send_push_to_all_background
+        send_push_to_all_background(
+            db,
+            title="🏆 New Math Contest Available!",
+            body=f"Join the new '{contest.title}' contest now! Entry fee is only ₹{contest.entry_fee:.2f}, Prize Pool: ₹{contest.prize_pool:.2f}.",
+            data={"type": "contest_created", "contest_id": str(contest.id), "category": "MATH"}
+        )
+    except Exception as e:
+        print(f"Failed to trigger background push notification: {e}")
+
     return contest
 
 @router.get("/withdrawals", response_model=List[TransactionResponse])
