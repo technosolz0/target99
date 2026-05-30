@@ -14,7 +14,8 @@ from app.schemas import (
     FruitLeaderboardItem
 )
 from app.core.security import get_current_user
-from app.services import FruitGameService, FruitRewardService, fruit_leaderboard_manager
+from app.services import FruitGameService, FruitRewardService
+from app.websocket import fruit_leaderboard_manager
 
 router = APIRouter(prefix="/fruit-game", tags=["Fruit Slicing Game"])
 
