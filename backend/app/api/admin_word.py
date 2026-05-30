@@ -71,7 +71,7 @@ def upload_contest_questions(
     db: Session = Depends(get_db)
 ):
     """
-    Bulk uploads questions for a specific contest.
+    Bulk uploads questions for a specific contest, performing a clean overwrite.
     Each question dictionary has:
     - game_type (WORD_SEARCH, UNSCRAMBLE, MISSING_LETTERS, CROSSWORD)
     - difficulty (EASY, MEDIUM, HARD)
@@ -85,6 +85,17 @@ def upload_contest_questions(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Contest not found."
+        )
+
+    # Clean overwrite: Delete existing questions for this contest
+    try:
+        db.query(WordQuestion).filter(WordQuestion.contest_id == contest_id).delete()
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot update questions because users have already attempted this contest."
         )
 
     questions_added = 0
@@ -109,3 +120,45 @@ def upload_contest_questions(
 
     db.commit()
     return {"status": "SUCCESS", "questions_added": questions_added}
+
+
+@router.get("/contests/{contest_id}/questions")
+def get_contest_questions(
+    contest_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Fetches all questions for a specific Word Puzzle contest.
+    """
+    contest = db.query(WordContest).filter(WordContest.id == contest_id).first()
+    if not contest:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Contest not found."
+        )
+
+    questions = db.query(WordQuestion).filter(WordQuestion.contest_id == contest_id).all()
+    
+    result = []
+    for q in questions:
+        try:
+            p_data = json.loads(q.puzzle_data)
+        except Exception:
+            p_data = q.puzzle_data
+        
+        try:
+            clues_val = json.loads(q.clues) if q.clues else None
+        except Exception:
+            clues_val = q.clues
+
+        result.append({
+            "id": q.id,
+            "game_type": q.game_type,
+            "difficulty": q.difficulty,
+            "puzzle_data": p_data,
+            "clues": clues_val,
+            "correct_answer": q.correct_answer,
+            "points_reward": q.points_reward
+        })
+    return result
+

@@ -126,6 +126,18 @@ function updateHeaders(tab) {
             el.pageTitle.innerText = "Casino Spin Engine Controller";
             el.pageSubtitle.innerText = "Configure RTP settings, monitor platform revenue, and review gaming logs";
             break;
+        case 'fruit-manager':
+            el.pageTitle.innerText = "Fruit Slicing Manager";
+            el.pageSubtitle.innerText = "Manage Fruit Slicing tournaments, create new contests, and payout prizes";
+            break;
+        case 'puzzle-manager':
+            el.pageTitle.innerText = "Slide Puzzle Manager";
+            el.pageSubtitle.innerText = "Manage slide puzzle matches, configure image assets, and award winnings";
+            break;
+        case 'word-manager':
+            el.pageTitle.innerText = "Word Puzzle Manager";
+            el.pageSubtitle.innerText = "Manage word puzzle contest lobbies, design vocabularies, and distribute rewards";
+            break;
     }
 }
 
@@ -559,6 +571,15 @@ function loadTabSpecificData(tab) {
             break;
         case 'spin-engine':
             loadSpinEngineData();
+            break;
+        case 'fruit-manager':
+            loadFruitManager();
+            break;
+        case 'puzzle-manager':
+            loadPuzzleManager();
+            break;
+        case 'word-manager':
+            loadWordManager();
             break;
     }
 }
@@ -1459,6 +1480,783 @@ document.addEventListener('DOMContentLoaded', () => {
                 showToast("Maintenance toggle error: " + err.message, true);
             } finally {
                 btnToggleMaintenance.disabled = false;
+            }
+        });
+    }
+});
+
+
+// ==========================================
+// FRUIT SLICING TOURNAMENT MANAGER CONTROLLER
+// ==========================================
+
+async function loadFruitManager() {
+    try {
+        const res = await fetch(`${API_BASE}/fruit-game/contests`);
+        if (!res.ok) throw new Error("Failed to load Fruit Slicing contests.");
+        const contests = await res.json();
+
+        // 1. Calculate and update stats
+        const activeCount = contests.filter(c => c.status === 'ACTIVE').length;
+        const totalFees = contests.reduce((sum, c) => sum + (c.entry_fee * c.joined_slots), 0);
+
+        document.getElementById('fruit-stat-active').innerText = activeCount;
+        document.getElementById('fruit-stat-fees').innerText = `₹${totalFees.toFixed(2)}`;
+
+        // 2. Render table
+        const tbody = document.getElementById('fruit-contests-table-body');
+        if (tbody) {
+            if (contests.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="table-placeholder">No Fruit Slicing contests active or defined yet.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = contests.map(c => {
+                let statusBadge = 'badge-warning';
+                if (c.status === 'ACTIVE') statusBadge = 'badge-success';
+                if (c.status === 'COMPLETED') statusBadge = 'badge-info';
+
+                const startTimeStr = new Date(c.start_time).toLocaleString();
+                const endTimeStr = c.end_time ? new Date(c.end_time).toLocaleString() : 'N/A';
+
+                const actionBtn = c.status !== 'COMPLETED'
+                    ? `<button class="btn btn-action btn-unban" onclick="completeFruitContest(${c.id})">Complete</button>`
+                    : `<span class="text-muted" style="font-size:12px;">Payout Done</span>`;
+
+                let rulesHtml = '';
+                if (c.prize_rules && c.prize_rules.length > 0) {
+                    rulesHtml = `<div style="font-size: 11px; color: var(--text-muted); margin-top: 5px; display: flex; flex-direction: column; gap: 2px;">` +
+                        c.prize_rules.map(r => `<span>Rank ${r.min_rank}${r.min_rank === r.max_rank ? '' : '-' + r.max_rank}: ₹${r.prize}</span>`).join('') +
+                        `</div>`;
+                }
+
+                return `
+                    <tr>
+                        <td>${c.id}</td>
+                        <td>
+                            <strong style="font-size:14px; color:var(--text-main);">${c.title}</strong>
+                        </td>
+                        <td>₹${c.entry_fee.toFixed(2)}</td>
+                        <td>
+                            <div class="user-cell">
+                                <span>${c.joined_slots} / ${c.total_slots} filled</span>
+                                <div style="background-color: rgba(255,255,255,0.05); width:120px; height:4px; border-radius:2px; margin-top:4px; overflow:hidden;">
+                                    <div style="background:var(--primary); height:100%; width: ${(c.joined_slots / c.total_slots) * 100}%"></div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <strong>₹${c.prize_pool.toFixed(2)}</strong>
+                            ${rulesHtml}
+                        </td>
+                        <td>
+                            <div style="font-size: 11px;">
+                                <div><strong>Start:</strong> ${startTimeStr}</div>
+                                <div><strong>End:</strong> ${endTimeStr}</div>
+                                <div><strong>Duration:</strong> ${c.duration_seconds}s</div>
+                                <div><strong>Seed:</strong> <code style="color:var(--warning);">${c.seed}</code></div>
+                            </div>
+                        </td>
+                        <td><span class="badge ${statusBadge}">${c.status}</span></td>
+                        <td>
+                            <div style="display:flex; gap:8px;">
+                                ${actionBtn}
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+    } catch (err) {
+        showToast(err.message, true);
+    }
+}
+
+async function completeFruitContest(contestId) {
+    if (!confirm("Are you sure you want to complete this Fruit contest and award the winners?")) return;
+    try {
+        const res = await fetch(`${API_BASE}/admin/fruit-slicing/contests/${contestId}/complete`, {
+            method: 'POST'
+        });
+        if (!res.ok) throw new Error(await res.text());
+        showToast("Fruit tournament completed and prize payouts distributed!");
+        loadFruitManager();
+    } catch (err) {
+        showToast("Error completing Fruit tournament: " + err.message, true);
+    }
+}
+
+window.completeFruitContest = completeFruitContest;
+
+
+// ==========================================
+// IMAGE SLIDE PUZZLE MANAGER CONTROLLER
+// ==========================================
+
+async function loadPuzzleManager() {
+    try {
+        const res = await fetch(`${API_BASE}/puzzle/contests`);
+        if (!res.ok) throw new Error("Failed to load Image Puzzle contests.");
+        const contests = await res.json();
+
+        // 1. Calculate and update stats
+        const activeCount = contests.filter(c => c.status === 'ACTIVE').length;
+        document.getElementById('puzzle-stat-active').innerText = activeCount;
+
+        // 2. Render table
+        const tbody = document.getElementById('puzzle-contests-table-body');
+        if (tbody) {
+            if (contests.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="table-placeholder">No Image Puzzle contests active or defined yet.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = contests.map(c => {
+                let statusBadge = 'badge-warning';
+                if (c.status === 'ACTIVE') statusBadge = 'badge-success';
+                if (c.status === 'COMPLETED') statusBadge = 'badge-info';
+
+                const startTimeStr = new Date(c.start_time).toLocaleString();
+                const endTimeStr = c.end_time ? new Date(c.end_time).toLocaleString() : 'N/A';
+
+                const actionBtn = c.status !== 'COMPLETED'
+                    ? `<button class="btn btn-action btn-unban" onclick="completePuzzleContest(${c.id})">Complete</button>`
+                    : `<span class="text-muted" style="font-size:12px;">Payout Done</span>`;
+
+                let rulesHtml = '';
+                if (c.prize_rules && c.prize_rules.length > 0) {
+                    rulesHtml = `<div style="font-size: 11px; color: var(--text-muted); margin-top: 5px; display: flex; flex-direction: column; gap: 2px;">` +
+                        c.prize_rules.map(r => `<span>Rank ${r.min_rank}${r.min_rank === r.max_rank ? '' : '-' + r.max_rank}: ₹${r.prize}</span>`).join('') +
+                        `</div>`;
+                }
+
+                return `
+                    <tr>
+                        <td>${c.id}</td>
+                        <td>
+                            <div style="display:flex; gap:10px; align-items:center;">
+                                <img src="${c.image_url}" style="width:40px; height:40px; border-radius:6px; border:1px solid var(--border-color); object-fit:cover;">
+                                <strong style="font-size:14px; color:var(--text-main);">${c.title}</strong>
+                            </div>
+                        </td>
+                        <td>₹${c.entry_fee.toFixed(2)}</td>
+                        <td>
+                            <div class="user-cell">
+                                <span>${c.joined_slots} / ${c.total_slots} filled</span>
+                                <div style="background-color: rgba(255,255,255,0.05); width:120px; height:4px; border-radius:2px; margin-top:4px; overflow:hidden;">
+                                    <div style="background:var(--primary); height:100%; width: ${(c.joined_slots / c.total_slots) * 100}%"></div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <strong>₹${c.prize_pool.toFixed(2)}</strong>
+                            ${rulesHtml}
+                        </td>
+                        <td>
+                            <div style="font-size: 11px;">
+                                <div><strong>Grid Size:</strong> ${c.grid_size}x${c.grid_size}</div>
+                                <div><strong>Solve Limit:</strong> ${c.duration_seconds}s</div>
+                                <div><strong>Start:</strong> ${startTimeStr}</div>
+                                <div><strong>End:</strong> ${endTimeStr}</div>
+                            </div>
+                        </td>
+                        <td><span class="badge ${statusBadge}">${c.status}</span></td>
+                        <td>
+                            <div style="display:flex; gap:8px;">
+                                ${actionBtn}
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+    } catch (err) {
+        showToast(err.message, true);
+    }
+}
+
+async function completePuzzleContest(contestId) {
+    if (!confirm("Are you sure you want to complete this Image Puzzle contest and award the winners?")) return;
+    try {
+        const res = await fetch(`${API_BASE}/admin/puzzle/contests/${contestId}/complete`, {
+            method: 'POST'
+        });
+        if (!res.ok) throw new Error(await res.text());
+        showToast("Puzzle contest completed and prize payouts distributed!");
+        loadPuzzleManager();
+    } catch (err) {
+        showToast("Error completing Puzzle contest: " + err.message, true);
+    }
+}
+
+window.completePuzzleContest = completePuzzleContest;
+
+
+// ==========================================
+// WORD PUZZLE MANAGER CONTROLLER
+// ==========================================
+
+// Word Questions templates based on Game Type
+const WORD_PUZZLE_TEMPLATES = {
+    UNSCRAMBLE: { scrambled: "DART" },
+    MISSING_LETTERS: { pattern: "D_R_" },
+    WORD_SEARCH: { grid: [["B","L","O","C"],["X","Y","Z","A"],["Q","W","E","R"],["A","S","D","F"]] },
+    CROSSWORD: { grid: [["D","A","R","T"]], row: 0, col: 0, direction: "horizontal" }
+};
+
+async function loadWordManager() {
+    try {
+        const res = await fetch(`${API_BASE}/word-game/contests`);
+        if (!res.ok) throw new Error("Failed to load Word Guessing contests.");
+        const contests = await res.json();
+
+        // 1. Calculate and update stats
+        const activeCount = contests.filter(c => c.status === 'ACTIVE').length;
+        document.getElementById('word-stat-active').innerText = activeCount;
+
+        // 2. Populate contest select for question editor
+        const select = document.getElementById('wqc-contest-select');
+        if (select) {
+            select.innerHTML = '<option value="">-- Choose a Word Contest --</option>' +
+                contests.map(c => `<option value="${c.id}">${c.title} (ID: ${c.id})</option>`).join('');
+            
+            // Reset view
+            document.getElementById('wqc-questions-section').style.display = 'none';
+            document.getElementById('wqc-questions-list').innerHTML = '';
+        }
+
+        // 3. Render table
+        const tbody = document.getElementById('word-contests-table-body');
+        if (tbody) {
+            if (contests.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="table-placeholder">No Word Guessing contests active or defined yet.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = contests.map(c => {
+                let statusBadge = 'badge-warning';
+                if (c.status === 'ACTIVE') statusBadge = 'badge-success';
+                if (c.status === 'COMPLETED') statusBadge = 'badge-info';
+
+                const startTimeStr = new Date(c.start_time).toLocaleString();
+                const endTimeStr = c.end_time ? new Date(c.end_time).toLocaleString() : 'N/A';
+
+                const actionBtn = c.status !== 'COMPLETED'
+                    ? `<button class="btn btn-action btn-unban" onclick="completeWordContest(${c.id})">Complete</button>`
+                    : `<span class="text-muted" style="font-size:12px;">Payout Done</span>`;
+
+                let rulesHtml = '';
+                if (c.prize_rules && c.prize_rules.length > 0) {
+                    rulesHtml = `<div style="font-size: 11px; color: var(--text-muted); margin-top: 5px; display: flex; flex-direction: column; gap: 2px;">` +
+                        c.prize_rules.map(r => `<span>Rank ${r.min_rank}${r.min_rank === r.max_rank ? '' : '-' + r.max_rank}: ₹${r.prize}</span>`).join('') +
+                        `</div>`;
+                }
+
+                return `
+                    <tr>
+                        <td>${c.id}</td>
+                        <td>
+                            <strong style="font-size:14px; color:var(--text-main);">${c.title}</strong>
+                        </td>
+                        <td>₹${c.entry_fee.toFixed(2)}</td>
+                        <td>
+                            <div class="user-cell">
+                                <span>${c.joined_slots} / ${c.total_slots} filled</span>
+                                <div style="background-color: rgba(255,255,255,0.05); width:120px; height:4px; border-radius:2px; margin-top:4px; overflow:hidden;">
+                                    <div style="background:var(--primary); height:100%; width: ${(c.joined_slots / c.total_slots) * 100}%"></div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <strong>₹${c.prize_pool.toFixed(2)}</strong>
+                            ${rulesHtml}
+                        </td>
+                        <td>
+                            <div style="font-size: 11px;">
+                                <div><strong>Difficulty:</strong> <span class="badge badge-info">${c.difficulty}</span></div>
+                                <div><strong>Solve Limit:</strong> ${c.duration_seconds}s</div>
+                                <div><strong>Start:</strong> ${startTimeStr}</div>
+                                <div><strong>End:</strong> ${endTimeStr}</div>
+                            </div>
+                        </td>
+                        <td><span class="badge ${statusBadge}">${c.status}</span></td>
+                        <td>
+                            <div style="display:flex; gap:8px;">
+                                ${actionBtn}
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+    } catch (err) {
+        showToast(err.message, true);
+    }
+}
+
+async function completeWordContest(contestId) {
+    if (!confirm("Are you sure you want to complete this Word contest and award the winners?")) return;
+    try {
+        const res = await fetch(`${API_BASE}/admin/word-puzzle/contests/${contestId}/complete`, {
+            method: 'POST'
+        });
+        if (!res.ok) throw new Error(await res.text());
+        showToast("Word contest completed and prize payouts distributed!");
+        loadWordManager();
+    } catch (err) {
+        showToast("Error completing Word contest: " + err.message, true);
+    }
+}
+
+window.completeWordContest = completeWordContest;
+
+async function loadWordManagerQuestions(contestId) {
+    try {
+        const res = await fetch(`${API_BASE}/admin/word-puzzle/contests/${contestId}/questions`);
+        if (!res.ok) throw new Error("Failed to load word questions.");
+        const questions = await res.json();
+
+        const listContainer = document.getElementById('wqc-questions-list');
+        listContainer.innerHTML = '';
+
+        if (questions && questions.length > 0) {
+            questions.forEach(q => {
+                addWQCQuestionRow(q.id, q.game_type, q.difficulty, q.puzzle_data, q.clues, q.correct_answer, q.points_reward);
+            });
+        } else {
+            addWQCQuestionRow(null, 'UNSCRAMBLE', 'EASY', '', '', '', 100);
+        }
+    } catch (err) {
+        showToast(err.message, true);
+    }
+}
+
+function addWQCQuestionRow(id = null, gameType = 'UNSCRAMBLE', difficulty = 'EASY', puzzleData = '', clues = '', correctAnswer = '', pointsReward = 100) {
+    const listContainer = document.getElementById('wqc-questions-list');
+    if (!listContainer) return;
+    
+    const card = document.createElement('div');
+    card.className = 'quiz-question-card';
+    
+    let puzzleDataStr = typeof puzzleData === 'object' ? JSON.stringify(puzzleData, null, 4) : puzzleData;
+    let cluesStr = typeof clues === 'object' ? JSON.stringify(clues) : clues || '';
+
+    card.innerHTML = `
+        <div class="question-header">
+            <span style="font-size:12px; color:var(--primary); font-weight:700;">Word Question</span>
+            <button type="button" class="btn-remove-rule btn-remove-question" title="Remove Question">&times;</button>
+        </div>
+        <div class="question-options-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
+            <div class="form-group">
+                <label>Game Type</label>
+                <select class="wq-game-type" style="background: #1e293b; color: #fff; border: 1px solid #334155; padding: 8px 12px; border-radius: 6px; font-family: inherit; font-size:12px;">
+                    <option value="UNSCRAMBLE" ${gameType === 'UNSCRAMBLE' ? 'selected' : ''}>UNSCRAMBLE</option>
+                    <option value="MISSING_LETTERS" ${gameType === 'MISSING_LETTERS' ? 'selected' : ''}>MISSING_LETTERS</option>
+                    <option value="WORD_SEARCH" ${gameType === 'WORD_SEARCH' ? 'selected' : ''}>WORD_SEARCH</option>
+                    <option value="CROSSWORD" ${gameType === 'CROSSWORD' ? 'selected' : ''}>CROSSWORD</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Difficulty</label>
+                <select class="wq-difficulty" style="background: #1e293b; color: #fff; border: 1px solid #334155; padding: 8px 12px; border-radius: 6px; font-family: inherit; font-size:12px;">
+                    <option value="EASY" ${difficulty === 'EASY' ? 'selected' : ''}>EASY</option>
+                    <option value="MEDIUM" ${difficulty === 'MEDIUM' ? 'selected' : ''}>MEDIUM</option>
+                    <option value="HARD" ${difficulty === 'HARD' ? 'selected' : ''}>HARD</option>
+                </select>
+            </div>
+        </div>
+        
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px;">
+            <div class="form-group">
+                <label>Correct Answer</label>
+                <input type="text" class="wq-correct-answer" value="${correctAnswer.replace(/"/g, '&quot;')}" placeholder="e.g. DART" required>
+            </div>
+            <div class="form-group">
+                <label>Points Reward</label>
+                <input type="number" class="wq-points-reward" value="${pointsReward}" min="1" required>
+            </div>
+        </div>
+
+        <div class="form-group" style="margin-top:10px;">
+            <label>Clues / Hint</label>
+            <input type="text" class="wq-clues" value="${cluesStr.replace(/"/g, '&quot;')}" placeholder="e.g. Target language for Flutter apps.">
+        </div>
+
+        <div class="form-group" style="margin-top:10px;">
+            <label>Puzzle Data (JSON format)</label>
+            <textarea class="wq-puzzle-data" style="width:100%; height:80px; background:#1e293b; color:#51ff00; border:1px solid #334155; padding:10px; border-radius:6px; font-family: monospace; resize:none; font-size:11px; line-height: 1.4;" required>${puzzleDataStr}</textarea>
+            <span class="template-help-text" style="font-size: 10px; color: var(--text-muted); display: block; margin-top: 4px;"></span>
+        </div>
+    `;
+
+    const typeSelect = card.querySelector('.wq-game-type');
+    const puzzleDataArea = card.querySelector('.wq-puzzle-data');
+    const helpTextSpan = card.querySelector('.template-help-text');
+
+    const updateHelpText = () => {
+        const type = typeSelect.value;
+        if (type === 'UNSCRAMBLE') {
+            helpTextSpan.innerHTML = `Format: <code>{"scrambled": "TDAR"}</code>`;
+        } else if (type === 'MISSING_LETTERS') {
+            helpTextSpan.innerHTML = `Format: <code>{"pattern": "D_R_"}</code>`;
+        } else if (type === 'WORD_SEARCH') {
+            helpTextSpan.innerHTML = `Format: <code>{"grid": [["B","L","O","C"], ["X","Y","Z","A"], ...]}</code>`;
+        } else if (type === 'CROSSWORD') {
+            helpTextSpan.innerHTML = `Format: <code>{"grid": [["D","A","R","T"]], "row": 0, "col": 0, "direction": "horizontal"}</code>`;
+        }
+    };
+
+    typeSelect.addEventListener('change', () => {
+        updateHelpText();
+        const type = typeSelect.value;
+        if (!puzzleDataArea.value || puzzleDataArea.value === '{}' || puzzleDataArea.value.includes('"scrambled"') || puzzleDataArea.value.includes('"pattern"') || puzzleDataArea.value.includes('"grid"')) {
+            puzzleDataArea.value = JSON.stringify(WORD_PUZZLE_TEMPLATES[type], null, 4);
+        }
+    });
+
+    card.querySelector('.btn-remove-question').addEventListener('click', () => {
+        card.remove();
+    });
+
+    updateHelpText();
+    if (!puzzleDataStr) {
+        puzzleDataArea.value = JSON.stringify(WORD_PUZZLE_TEMPLATES[gameType], null, 4);
+    }
+
+    listContainer.appendChild(card);
+}
+
+function addPrizeRuleRow(listContainerId) {
+    const listEl = document.getElementById(listContainerId);
+    if (!listEl) return;
+    const rows = listEl.querySelectorAll('.prize-rule-row');
+    let nextMin = 1;
+    if (rows.length > 0) {
+        const lastMaxInput = rows[rows.length - 1].querySelector('.rule-max-rank');
+        const lastMax = parseInt(lastMaxInput.value);
+        if (!isNaN(lastMax)) {
+            nextMin = lastMax + 1;
+        }
+    }
+
+    const row = document.createElement('div');
+    row.className = 'prize-rule-row';
+    row.innerHTML = `
+        <input type="number" placeholder="Min" class="rule-min-rank" min="1" value="${nextMin}" required style="padding: 6px 8px;">
+        <span>to</span>
+        <input type="number" placeholder="Max" class="rule-max-rank" min="1" value="${nextMin}" required style="padding: 6px 8px;">
+        <input type="number" placeholder="Prize (₹)" class="rule-prize" min="0" required style="padding: 6px 8px;">
+        <button type="button" class="btn-remove-rule" title="Remove Rule">&times;</button>
+    `;
+
+    row.querySelector('.btn-remove-rule').addEventListener('click', () => {
+        row.remove();
+    });
+
+    const minInput = row.querySelector('.rule-min-rank');
+    const maxInput = row.querySelector('.rule-max-rank');
+    minInput.addEventListener('input', () => {
+        if (maxInput.value === minInput.dataset.prevMin || maxInput.value === '') {
+            maxInput.value = minInput.value;
+        }
+        minInput.dataset.prevMin = minInput.value;
+    });
+    minInput.dataset.prevMin = minInput.value;
+
+    listEl.appendChild(row);
+    listEl.scrollTop = listEl.scrollHeight;
+}
+
+// Event Listeners for new game managers
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Add Prize Rule Listeners
+    const btnFCAddRule = document.getElementById('btn-fc-add-prize-rule');
+    if (btnFCAddRule) {
+        btnFCAddRule.addEventListener('click', () => addPrizeRuleRow('fc-prize-rules-list'));
+    }
+    const btnPCAddRule = document.getElementById('btn-pc-add-prize-rule');
+    if (btnPCAddRule) {
+        btnPCAddRule.addEventListener('click', () => addPrizeRuleRow('pc-prize-rules-list'));
+    }
+    const btnWCAddRule = document.getElementById('btn-wc-add-prize-rule');
+    if (btnWCAddRule) {
+        btnWCAddRule.addEventListener('click', () => addPrizeRuleRow('wc-prize-rules-list'));
+    }
+
+    // 2. Image URL Preview for Slide Puzzle
+    const pcImageUrlInput = document.getElementById('pc-image-url');
+    const pcImagePreview = document.getElementById('pc-image-preview');
+    if (pcImageUrlInput && pcImagePreview) {
+        pcImageUrlInput.addEventListener('input', (e) => {
+            pcImagePreview.src = e.target.value.trim() || 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=500&auto=format&fit=crop';
+        });
+    }
+
+    // Helper to collect prize rules from list container
+    function collectPrizeRules(listContainerId) {
+        const rules = [];
+        const rows = document.getElementById(listContainerId).querySelectorAll('.prize-rule-row');
+        for (const r of rows) {
+            const minRank = parseInt(r.querySelector('.rule-min-rank').value);
+            const maxRank = parseInt(r.querySelector('.rule-max-rank').value);
+            const prize = parseFloat(r.querySelector('.rule-prize').value);
+            if (isNaN(minRank) || isNaN(maxRank) || isNaN(prize)) continue;
+            rules.push({ min_rank: minRank, max_rank: maxRank, prize: prize });
+        }
+        return rules;
+    }
+
+    // 3. Launch Fruit Contest Form Submit
+    const fcForm = document.getElementById('fruit-contest-form');
+    if (fcForm) {
+        fcForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const title = document.getElementById('fc-title').value.trim();
+            const entryFee = parseFloat(document.getElementById('fc-fee').value);
+            const totalSlots = parseInt(document.getElementById('fc-slots').value);
+            const prizePool = parseFloat(document.getElementById('fc-pool').value);
+            const duration = parseInt(document.getElementById('fc-duration').value);
+            const startTimeStr = document.getElementById('fc-start-time').value;
+            const endTimeStr = document.getElementById('fc-end-time').value;
+
+            const prizeRules = collectPrizeRules('fc-prize-rules-list');
+
+            const payload = {
+                title,
+                entry_fee: entryFee,
+                total_slots: totalSlots,
+                prize_pool: prizePool,
+                duration_seconds: duration,
+                start_time: new Date(startTimeStr).toISOString(),
+                end_time: endTimeStr ? new Date(endTimeStr).toISOString() : null,
+                prize_rules: prizeRules
+            };
+
+            const btn = fcForm.querySelector('button[type="submit"]');
+            btn.disabled = true;
+            btn.innerText = "Launching...";
+
+            try {
+                const res = await fetch(`${API_BASE}/admin/fruit-slicing/contests`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!res.ok) throw new Error(await res.text());
+
+                showToast("Fruit slicing tournament launched successfully!");
+                fcForm.reset();
+                document.getElementById('fc-prize-rules-list').innerHTML = '';
+                loadFruitManager();
+            } catch (err) {
+                showToast("Failed to launch: " + err.message, true);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Launch Fruit Tournament";
+            }
+        });
+    }
+
+    // 4. Launch Slide Puzzle Contest Form Submit
+    const pcForm = document.getElementById('puzzle-contest-form');
+    if (pcForm) {
+        pcForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const title = document.getElementById('pc-title').value.trim();
+            const imageUrl = document.getElementById('pc-image-url').value.trim();
+            const entryFee = parseFloat(document.getElementById('pc-fee').value);
+            const totalSlots = parseInt(document.getElementById('pc-slots').value);
+            const prizePool = parseFloat(document.getElementById('pc-pool').value);
+            const gridSize = parseInt(document.getElementById('pc-grid-size').value);
+            const duration = parseInt(document.getElementById('pc-duration').value);
+            const startTimeStr = document.getElementById('pc-start-time').value;
+            const endTimeStr = document.getElementById('pc-end-time').value;
+
+            const prizeRules = collectPrizeRules('pc-prize-rules-list');
+
+            const payload = {
+                title,
+                image_url: imageUrl,
+                entry_fee: entryFee,
+                total_slots: totalSlots,
+                prize_pool: prizePool,
+                grid_size: gridSize,
+                duration_seconds: duration,
+                start_time: new Date(startTimeStr).toISOString(),
+                end_time: endTimeStr ? new Date(endTimeStr).toISOString() : null,
+                prize_rules: prizeRules
+            };
+
+            const btn = pcForm.querySelector('button[type="submit"]');
+            btn.disabled = true;
+            btn.innerText = "Launching...";
+
+            try {
+                const res = await fetch(`${API_BASE}/admin/puzzle/contests`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!res.ok) throw new Error(await res.text());
+
+                showToast("Slide puzzle tournament launched successfully!");
+                pcForm.reset();
+                document.getElementById('pc-prize-rules-list').innerHTML = '';
+                if (pcImagePreview) pcImagePreview.src = 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=500&auto=format&fit=crop';
+                loadPuzzleManager();
+            } catch (err) {
+                showToast("Failed to launch: " + err.message, true);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Launch Puzzle Contest";
+            }
+        });
+    }
+
+    // 5. Launch Word Contest Form Submit
+    const wcForm = document.getElementById('word-contest-form');
+    if (wcForm) {
+        wcForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const title = document.getElementById('wc-title').value.trim();
+            const entryFee = parseFloat(document.getElementById('wc-fee').value);
+            const totalSlots = parseInt(document.getElementById('wc-slots').value);
+            const prizePool = parseFloat(document.getElementById('wc-pool').value);
+            const difficulty = document.getElementById('wc-difficulty').value;
+            const duration = parseInt(document.getElementById('wc-duration').value);
+            const startTimeStr = document.getElementById('wc-start-time').value;
+            const endTimeStr = document.getElementById('wc-end-time').value;
+
+            const prizeRules = collectPrizeRules('wc-prize-rules-list');
+
+            const payload = {
+                title,
+                entry_fee: entryFee,
+                total_slots: totalSlots,
+                prize_pool: prizePool,
+                difficulty,
+                duration_seconds: duration,
+                start_time: new Date(startTimeStr).toISOString(),
+                end_time: new Date(endTimeStr).toISOString(),
+                prize_rules: prizeRules
+            };
+
+            const btn = wcForm.querySelector('button[type="submit"]');
+            btn.disabled = true;
+            btn.innerText = "Launching...";
+
+            try {
+                const res = await fetch(`${API_BASE}/admin/word-puzzle/contests`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!res.ok) throw new Error(await res.text());
+
+                showToast("Word guessing tournament launched successfully!");
+                wcForm.reset();
+                document.getElementById('wc-prize-rules-list').innerHTML = '';
+                loadWordManager();
+            } catch (err) {
+                showToast("Failed to launch: " + err.message, true);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Launch Word Contest";
+            }
+        });
+    }
+
+    // 6. Word Question Editor - Contest Select Dropdown
+    const wqcContestSelect = document.getElementById('wqc-contest-select');
+    if (wqcContestSelect) {
+        wqcContestSelect.addEventListener('change', (e) => {
+            const val = parseInt(e.target.value);
+            if (isNaN(val)) {
+                document.getElementById('wqc-questions-section').style.display = 'none';
+                return;
+            }
+            document.getElementById('wqc-questions-section').style.display = 'block';
+            loadWordManagerQuestions(val);
+        });
+    }
+
+    // 7. Word Question Editor - Add Question Card Click
+    const btnWQCAddQuestion = document.getElementById('btn-wqc-add-question');
+    if (btnWQCAddQuestion) {
+        btnWQCAddQuestion.addEventListener('click', () => {
+            addWQCQuestionRow(null, 'UNSCRAMBLE', 'EASY', '', '', '', 100);
+        });
+    }
+
+    // 8. Word Question Editor - Save All Click
+    const btnWQCSaveQuestions = document.getElementById('btn-wqc-save-questions');
+    if (btnWQCSaveQuestions) {
+        btnWQCSaveQuestions.addEventListener('click', async () => {
+            const contestId = parseInt(document.getElementById('wqc-contest-select').value);
+            if (isNaN(contestId)) return;
+
+            const qCards = document.getElementById('wqc-questions-list').querySelectorAll('.quiz-question-card');
+            const questions = [];
+
+            for (const card of qCards) {
+                const gameType = card.querySelector('.wq-game-type').value;
+                const difficulty = card.querySelector('.wq-difficulty').value;
+                const correctAnswer = card.querySelector('.wq-correct-answer').value.trim();
+                const pointsReward = parseInt(card.querySelector('.wq-points-reward').value);
+                const clues = card.querySelector('.wq-clues').value.trim();
+                const rawPuzzleData = card.querySelector('.wq-puzzle-data').value.trim();
+
+                if (!correctAnswer || isNaN(pointsReward) || !rawPuzzleData) {
+                    showToast("Please fill all required fields for all questions.", true);
+                    return;
+                }
+
+                let parsedPuzzleData;
+                try {
+                    parsedPuzzleData = JSON.parse(rawPuzzleData);
+                } catch (e) {
+                    showToast("Puzzle Data is not valid JSON! Error: " + e.message, true);
+                    return;
+                }
+
+                let parsedClues = clues;
+                try {
+                    if (clues.startsWith('{') || clues.startsWith('[')) {
+                        parsedClues = JSON.parse(clues);
+                    }
+                } catch (e) {
+                    parsedClues = clues;
+                }
+
+                questions.push({
+                    game_type: gameType,
+                    difficulty: difficulty,
+                    puzzle_data: parsedPuzzleData,
+                    clues: parsedClues,
+                    correct_answer: correctAnswer,
+                    points_reward: pointsReward
+                });
+            }
+
+            btnWQCSaveQuestions.disabled = true;
+            btnWQCSaveQuestions.innerText = "Saving questions...";
+
+            try {
+                const response = await fetch(`${API_BASE}/admin/word-puzzle/questions/bulk/${contestId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(questions)
+                });
+
+                if (!response.ok) throw new Error(await response.text());
+
+                showToast("Word contest questions saved successfully!");
+                loadWordManagerQuestions(contestId);
+            } catch (err) {
+                showToast("Failed to save: " + err.message, true);
+            } finally {
+                btnWQCSaveQuestions.disabled = false;
+                btnWQCSaveQuestions.innerText = "Save All Word Questions";
             }
         });
     }
