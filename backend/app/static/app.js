@@ -520,6 +520,302 @@ function setupEventHandlers() {
             }
         });
     }
+
+    // ==========================================
+    // NEW GAME MANAGERS EVENT LISTENERS
+    // ==========================================
+
+    // 1. Add Prize Rule Listeners
+    const btnFCAddRule = document.getElementById('btn-fc-add-prize-rule');
+    if (btnFCAddRule) {
+        btnFCAddRule.addEventListener('click', () => addPrizeRuleRow('fc-prize-rules-list'));
+    }
+    const btnPCAddRule = document.getElementById('btn-pc-add-prize-rule');
+    if (btnPCAddRule) {
+        btnPCAddRule.addEventListener('click', () => addPrizeRuleRow('pc-prize-rules-list'));
+    }
+    const btnWCAddRule = document.getElementById('btn-wc-add-prize-rule');
+    if (btnWCAddRule) {
+        btnWCAddRule.addEventListener('click', () => addPrizeRuleRow('wc-prize-rules-list'));
+    }
+
+    // 2. Image URL Preview for Slide Puzzle
+    const pcImageUrlInput = document.getElementById('pc-image-url');
+    const pcImagePreview = document.getElementById('pc-image-preview');
+    if (pcImageUrlInput && pcImagePreview) {
+        pcImageUrlInput.addEventListener('input', (e) => {
+            pcImagePreview.src = e.target.value.trim() || 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=500&auto=format&fit=crop';
+        });
+    }
+
+    // Helper to collect prize rules from list container
+    function collectPrizeRules(listContainerId) {
+        const rules = [];
+        const rows = document.getElementById(listContainerId).querySelectorAll('.prize-rule-row');
+        for (const r of rows) {
+            const minRank = parseInt(r.querySelector('.rule-min-rank').value);
+            const maxRank = parseInt(r.querySelector('.rule-max-rank').value);
+            const prize = parseFloat(r.querySelector('.rule-prize').value);
+            if (isNaN(minRank) || isNaN(maxRank) || isNaN(prize)) continue;
+            rules.push({ min_rank: minRank, max_rank: maxRank, prize: prize });
+        }
+        return rules;
+    }
+
+    // 3. Launch Fruit Contest Form Submit
+    const fcForm = document.getElementById('fruit-contest-form');
+    if (fcForm) {
+        fcForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const title = document.getElementById('fc-title').value.trim();
+            const entryFee = parseFloat(document.getElementById('fc-fee').value);
+            const totalSlots = parseInt(document.getElementById('fc-slots').value);
+            const prizePool = parseFloat(document.getElementById('fc-pool').value);
+            const duration = parseInt(document.getElementById('fc-duration').value);
+            const startTimeStr = document.getElementById('fc-start-time').value;
+            const endTimeStr = document.getElementById('fc-end-time').value;
+
+            const prizeRules = collectPrizeRules('fc-prize-rules-list');
+
+            const payload = {
+                title,
+                entry_fee: entryFee,
+                total_slots: totalSlots,
+                prize_pool: prizePool,
+                duration_seconds: duration,
+                start_time: new Date(startTimeStr).toISOString(),
+                end_time: endTimeStr ? new Date(endTimeStr).toISOString() : null,
+                prize_rules: prizeRules
+            };
+
+            const btn = fcForm.querySelector('button[type="submit"]');
+            btn.disabled = true;
+            btn.innerText = "Launching...";
+
+            try {
+                const res = await fetch(`${API_BASE}/admin/fruit-slicing/contests`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!res.ok) throw new Error(await res.text());
+
+                showToast("Fruit slicing tournament launched successfully!");
+                fcForm.reset();
+                document.getElementById('fc-prize-rules-list').innerHTML = '';
+                loadFruitManager();
+            } catch (err) {
+                showToast("Failed to launch: " + err.message, true);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Launch Fruit Tournament";
+            }
+        });
+    }
+
+    // 4. Launch Slide Puzzle Contest Form Submit
+    const pcForm = document.getElementById('puzzle-contest-form');
+    if (pcForm) {
+        pcForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const title = document.getElementById('pc-title').value.trim();
+            const imageUrl = document.getElementById('pc-image-url').value.trim();
+            const entryFee = parseFloat(document.getElementById('pc-fee').value);
+            const totalSlots = parseInt(document.getElementById('pc-slots').value);
+            const prizePool = parseFloat(document.getElementById('pc-pool').value);
+            const gridSize = parseInt(document.getElementById('pc-grid-size').value);
+            const duration = parseInt(document.getElementById('pc-duration').value);
+            const startTimeStr = document.getElementById('pc-start-time').value;
+            const endTimeStr = document.getElementById('pc-end-time').value;
+
+            const prizeRules = collectPrizeRules('pc-prize-rules-list');
+
+            const payload = {
+                title,
+                image_url: imageUrl,
+                entry_fee: entryFee,
+                total_slots: totalSlots,
+                prize_pool: prizePool,
+                grid_size: gridSize,
+                duration_seconds: duration,
+                start_time: new Date(startTimeStr).toISOString(),
+                end_time: endTimeStr ? new Date(endTimeStr).toISOString() : null,
+                prize_rules: prizeRules
+            };
+
+            const btn = pcForm.querySelector('button[type="submit"]');
+            btn.disabled = true;
+            btn.innerText = "Launching...";
+
+            try {
+                const res = await fetch(`${API_BASE}/admin/puzzle/contests`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!res.ok) throw new Error(await res.text());
+
+                showToast("Slide puzzle tournament launched successfully!");
+                pcForm.reset();
+                document.getElementById('pc-prize-rules-list').innerHTML = '';
+                if (pcImagePreview) pcImagePreview.src = 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=500&auto=format&fit=crop';
+                loadPuzzleManager();
+            } catch (err) {
+                showToast("Failed to launch: " + err.message, true);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Launch Puzzle Contest";
+            }
+        });
+    }
+
+    // 5. Launch Word Contest Form Submit
+    const wcForm = document.getElementById('word-contest-form');
+    if (wcForm) {
+        wcForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const title = document.getElementById('wc-title').value.trim();
+            const entryFee = parseFloat(document.getElementById('wc-fee').value);
+            const totalSlots = parseInt(document.getElementById('wc-slots').value);
+            const prizePool = parseFloat(document.getElementById('wc-pool').value);
+            const difficulty = document.getElementById('wc-difficulty').value;
+            const duration = parseInt(document.getElementById('wc-duration').value);
+            const startTimeStr = document.getElementById('wc-start-time').value;
+            const endTimeStr = document.getElementById('wc-end-time').value;
+
+            const prizeRules = collectPrizeRules('wc-prize-rules-list');
+
+            const payload = {
+                title,
+                entry_fee: entryFee,
+                total_slots: totalSlots,
+                prize_pool: prizePool,
+                difficulty,
+                duration_seconds: duration,
+                start_time: new Date(startTimeStr).toISOString(),
+                end_time: new Date(endTimeStr).toISOString(),
+                prize_rules: prizeRules
+            };
+
+            const btn = wcForm.querySelector('button[type="submit"]');
+            btn.disabled = true;
+            btn.innerText = "Launching...";
+
+            try {
+                const res = await fetch(`${API_BASE}/admin/word-puzzle/contests`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!res.ok) throw new Error(await res.text());
+
+                showToast("Word guessing tournament launched successfully!");
+                wcForm.reset();
+                document.getElementById('wc-prize-rules-list').innerHTML = '';
+                loadWordManager();
+            } catch (err) {
+                showToast("Failed to launch: " + err.message, true);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Launch Word Contest";
+            }
+        });
+    }
+
+    // 6. Word Question Editor - Contest Select Dropdown
+    const wqcContestSelect = document.getElementById('wqc-contest-select');
+    if (wqcContestSelect) {
+        wqcContestSelect.addEventListener('change', (e) => {
+            const val = parseInt(e.target.value);
+            if (isNaN(val)) {
+                document.getElementById('wqc-questions-section').style.display = 'none';
+                return;
+            }
+            document.getElementById('wqc-questions-section').style.display = 'block';
+            loadWordManagerQuestions(val);
+        });
+    }
+
+    // 7. Word Question Editor - Add Question Card Click
+    const btnWQCAddQuestion = document.getElementById('btn-wqc-add-question');
+    if (btnWQCAddQuestion) {
+        btnWQCAddQuestion.addEventListener('click', () => {
+            addWQCQuestionRow(null, 'UNSCRAMBLE', 'EASY', '', '', '', 100);
+        });
+    }
+
+    // 8. Word Question Editor - Save All Click
+    const btnWQCSaveQuestions = document.getElementById('btn-wqc-save-questions');
+    if (btnWQCSaveQuestions) {
+        btnWQCSaveQuestions.addEventListener('click', async () => {
+            const contestId = parseInt(document.getElementById('wqc-contest-select').value);
+            if (isNaN(contestId)) return;
+
+            const qCards = document.getElementById('wqc-questions-list').querySelectorAll('.quiz-question-card');
+            const questions = [];
+
+            for (const card of qCards) {
+                const gameType = card.querySelector('.wq-game-type').value;
+                const difficulty = card.querySelector('.wq-difficulty').value;
+                const correctAnswer = card.querySelector('.wq-correct-answer').value.trim();
+                const pointsReward = parseInt(card.querySelector('.wq-points-reward').value);
+                const clues = card.querySelector('.wq-clues').value.trim();
+                const rawPuzzleData = card.querySelector('.wq-puzzle-data').value.trim();
+
+                if (!correctAnswer || isNaN(pointsReward) || !rawPuzzleData) {
+                    showToast("Please fill all required fields for all questions.", true);
+                    return;
+                }
+
+                let parsedPuzzleData;
+                try {
+                    parsedPuzzleData = JSON.parse(rawPuzzleData);
+                } catch (e) {
+                    showToast("Puzzle Data is not valid JSON! Error: " + e.message, true);
+                    return;
+                }
+
+                let parsedClues = clues;
+                try {
+                    if (clues.startsWith('{') || clues.startsWith('[')) {
+                        parsedClues = JSON.parse(clues);
+                    }
+                } catch (e) {
+                    parsedClues = clues;
+                }
+
+                questions.push({
+                    game_type: gameType,
+                    difficulty: difficulty,
+                    puzzle_data: parsedPuzzleData,
+                    clues: parsedClues,
+                    correct_answer: correctAnswer,
+                    points_reward: pointsReward
+                });
+            }
+
+            btnWQCSaveQuestions.disabled = true;
+            btnWQCSaveQuestions.innerText = "Saving questions...";
+
+            try {
+                const response = await fetch(`${API_BASE}/admin/word-puzzle/questions/bulk/${contestId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(questions)
+                });
+
+                if (!response.ok) throw new Error(await response.text());
+
+                showToast("Word contest questions saved successfully!");
+                loadWordManagerQuestions(contestId);
+            } catch (err) {
+                showToast("Failed to save: " + err.message, true);
+            } finally {
+                btnWQCSaveQuestions.disabled = false;
+                btnWQCSaveQuestions.innerText = "Save All Word Questions";
+            }
+        });
+    }
 }
 
 // Data loading
@@ -1967,300 +2263,7 @@ function addPrizeRuleRow(listContainerId) {
     listEl.scrollTop = listEl.scrollHeight;
 }
 
-// Event Listeners for new game managers
-document.addEventListener('DOMContentLoaded', () => {
-    // 1. Add Prize Rule Listeners
-    const btnFCAddRule = document.getElementById('btn-fc-add-prize-rule');
-    if (btnFCAddRule) {
-        btnFCAddRule.addEventListener('click', () => addPrizeRuleRow('fc-prize-rules-list'));
-    }
-    const btnPCAddRule = document.getElementById('btn-pc-add-prize-rule');
-    if (btnPCAddRule) {
-        btnPCAddRule.addEventListener('click', () => addPrizeRuleRow('pc-prize-rules-list'));
-    }
-    const btnWCAddRule = document.getElementById('btn-wc-add-prize-rule');
-    if (btnWCAddRule) {
-        btnWCAddRule.addEventListener('click', () => addPrizeRuleRow('wc-prize-rules-list'));
-    }
 
-    // 2. Image URL Preview for Slide Puzzle
-    const pcImageUrlInput = document.getElementById('pc-image-url');
-    const pcImagePreview = document.getElementById('pc-image-preview');
-    if (pcImageUrlInput && pcImagePreview) {
-        pcImageUrlInput.addEventListener('input', (e) => {
-            pcImagePreview.src = e.target.value.trim() || 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=500&auto=format&fit=crop';
-        });
-    }
-
-    // Helper to collect prize rules from list container
-    function collectPrizeRules(listContainerId) {
-        const rules = [];
-        const rows = document.getElementById(listContainerId).querySelectorAll('.prize-rule-row');
-        for (const r of rows) {
-            const minRank = parseInt(r.querySelector('.rule-min-rank').value);
-            const maxRank = parseInt(r.querySelector('.rule-max-rank').value);
-            const prize = parseFloat(r.querySelector('.rule-prize').value);
-            if (isNaN(minRank) || isNaN(maxRank) || isNaN(prize)) continue;
-            rules.push({ min_rank: minRank, max_rank: maxRank, prize: prize });
-        }
-        return rules;
-    }
-
-    // 3. Launch Fruit Contest Form Submit
-    const fcForm = document.getElementById('fruit-contest-form');
-    if (fcForm) {
-        fcForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const title = document.getElementById('fc-title').value.trim();
-            const entryFee = parseFloat(document.getElementById('fc-fee').value);
-            const totalSlots = parseInt(document.getElementById('fc-slots').value);
-            const prizePool = parseFloat(document.getElementById('fc-pool').value);
-            const duration = parseInt(document.getElementById('fc-duration').value);
-            const startTimeStr = document.getElementById('fc-start-time').value;
-            const endTimeStr = document.getElementById('fc-end-time').value;
-
-            const prizeRules = collectPrizeRules('fc-prize-rules-list');
-
-            const payload = {
-                title,
-                entry_fee: entryFee,
-                total_slots: totalSlots,
-                prize_pool: prizePool,
-                duration_seconds: duration,
-                start_time: new Date(startTimeStr).toISOString(),
-                end_time: endTimeStr ? new Date(endTimeStr).toISOString() : null,
-                prize_rules: prizeRules
-            };
-
-            const btn = fcForm.querySelector('button[type="submit"]');
-            btn.disabled = true;
-            btn.innerText = "Launching...";
-
-            try {
-                const res = await fetch(`${API_BASE}/admin/fruit-slicing/contests`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                if (!res.ok) throw new Error(await res.text());
-
-                showToast("Fruit slicing tournament launched successfully!");
-                fcForm.reset();
-                document.getElementById('fc-prize-rules-list').innerHTML = '';
-                loadFruitManager();
-            } catch (err) {
-                showToast("Failed to launch: " + err.message, true);
-            } finally {
-                btn.disabled = false;
-                btn.innerText = "Launch Fruit Tournament";
-            }
-        });
-    }
-
-    // 4. Launch Slide Puzzle Contest Form Submit
-    const pcForm = document.getElementById('puzzle-contest-form');
-    if (pcForm) {
-        pcForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const title = document.getElementById('pc-title').value.trim();
-            const imageUrl = document.getElementById('pc-image-url').value.trim();
-            const entryFee = parseFloat(document.getElementById('pc-fee').value);
-            const totalSlots = parseInt(document.getElementById('pc-slots').value);
-            const prizePool = parseFloat(document.getElementById('pc-pool').value);
-            const gridSize = parseInt(document.getElementById('pc-grid-size').value);
-            const duration = parseInt(document.getElementById('pc-duration').value);
-            const startTimeStr = document.getElementById('pc-start-time').value;
-            const endTimeStr = document.getElementById('pc-end-time').value;
-
-            const prizeRules = collectPrizeRules('pc-prize-rules-list');
-
-            const payload = {
-                title,
-                image_url: imageUrl,
-                entry_fee: entryFee,
-                total_slots: totalSlots,
-                prize_pool: prizePool,
-                grid_size: gridSize,
-                duration_seconds: duration,
-                start_time: new Date(startTimeStr).toISOString(),
-                end_time: endTimeStr ? new Date(endTimeStr).toISOString() : null,
-                prize_rules: prizeRules
-            };
-
-            const btn = pcForm.querySelector('button[type="submit"]');
-            btn.disabled = true;
-            btn.innerText = "Launching...";
-
-            try {
-                const res = await fetch(`${API_BASE}/admin/puzzle/contests`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                if (!res.ok) throw new Error(await res.text());
-
-                showToast("Slide puzzle tournament launched successfully!");
-                pcForm.reset();
-                document.getElementById('pc-prize-rules-list').innerHTML = '';
-                if (pcImagePreview) pcImagePreview.src = 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=500&auto=format&fit=crop';
-                loadPuzzleManager();
-            } catch (err) {
-                showToast("Failed to launch: " + err.message, true);
-            } finally {
-                btn.disabled = false;
-                btn.innerText = "Launch Puzzle Contest";
-            }
-        });
-    }
-
-    // 5. Launch Word Contest Form Submit
-    const wcForm = document.getElementById('word-contest-form');
-    if (wcForm) {
-        wcForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const title = document.getElementById('wc-title').value.trim();
-            const entryFee = parseFloat(document.getElementById('wc-fee').value);
-            const totalSlots = parseInt(document.getElementById('wc-slots').value);
-            const prizePool = parseFloat(document.getElementById('wc-pool').value);
-            const difficulty = document.getElementById('wc-difficulty').value;
-            const duration = parseInt(document.getElementById('wc-duration').value);
-            const startTimeStr = document.getElementById('wc-start-time').value;
-            const endTimeStr = document.getElementById('wc-end-time').value;
-
-            const prizeRules = collectPrizeRules('wc-prize-rules-list');
-
-            const payload = {
-                title,
-                entry_fee: entryFee,
-                total_slots: totalSlots,
-                prize_pool: prizePool,
-                difficulty,
-                duration_seconds: duration,
-                start_time: new Date(startTimeStr).toISOString(),
-                end_time: new Date(endTimeStr).toISOString(),
-                prize_rules: prizeRules
-            };
-
-            const btn = wcForm.querySelector('button[type="submit"]');
-            btn.disabled = true;
-            btn.innerText = "Launching...";
-
-            try {
-                const res = await fetch(`${API_BASE}/admin/word-puzzle/contests`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                if (!res.ok) throw new Error(await res.text());
-
-                showToast("Word guessing tournament launched successfully!");
-                wcForm.reset();
-                document.getElementById('wc-prize-rules-list').innerHTML = '';
-                loadWordManager();
-            } catch (err) {
-                showToast("Failed to launch: " + err.message, true);
-            } finally {
-                btn.disabled = false;
-                btn.innerText = "Launch Word Contest";
-            }
-        });
-    }
-
-    // 6. Word Question Editor - Contest Select Dropdown
-    const wqcContestSelect = document.getElementById('wqc-contest-select');
-    if (wqcContestSelect) {
-        wqcContestSelect.addEventListener('change', (e) => {
-            const val = parseInt(e.target.value);
-            if (isNaN(val)) {
-                document.getElementById('wqc-questions-section').style.display = 'none';
-                return;
-            }
-            document.getElementById('wqc-questions-section').style.display = 'block';
-            loadWordManagerQuestions(val);
-        });
-    }
-
-    // 7. Word Question Editor - Add Question Card Click
-    const btnWQCAddQuestion = document.getElementById('btn-wqc-add-question');
-    if (btnWQCAddQuestion) {
-        btnWQCAddQuestion.addEventListener('click', () => {
-            addWQCQuestionRow(null, 'UNSCRAMBLE', 'EASY', '', '', '', 100);
-        });
-    }
-
-    // 8. Word Question Editor - Save All Click
-    const btnWQCSaveQuestions = document.getElementById('btn-wqc-save-questions');
-    if (btnWQCSaveQuestions) {
-        btnWQCSaveQuestions.addEventListener('click', async () => {
-            const contestId = parseInt(document.getElementById('wqc-contest-select').value);
-            if (isNaN(contestId)) return;
-
-            const qCards = document.getElementById('wqc-questions-list').querySelectorAll('.quiz-question-card');
-            const questions = [];
-
-            for (const card of qCards) {
-                const gameType = card.querySelector('.wq-game-type').value;
-                const difficulty = card.querySelector('.wq-difficulty').value;
-                const correctAnswer = card.querySelector('.wq-correct-answer').value.trim();
-                const pointsReward = parseInt(card.querySelector('.wq-points-reward').value);
-                const clues = card.querySelector('.wq-clues').value.trim();
-                const rawPuzzleData = card.querySelector('.wq-puzzle-data').value.trim();
-
-                if (!correctAnswer || isNaN(pointsReward) || !rawPuzzleData) {
-                    showToast("Please fill all required fields for all questions.", true);
-                    return;
-                }
-
-                let parsedPuzzleData;
-                try {
-                    parsedPuzzleData = JSON.parse(rawPuzzleData);
-                } catch (e) {
-                    showToast("Puzzle Data is not valid JSON! Error: " + e.message, true);
-                    return;
-                }
-
-                let parsedClues = clues;
-                try {
-                    if (clues.startsWith('{') || clues.startsWith('[')) {
-                        parsedClues = JSON.parse(clues);
-                    }
-                } catch (e) {
-                    parsedClues = clues;
-                }
-
-                questions.push({
-                    game_type: gameType,
-                    difficulty: difficulty,
-                    puzzle_data: parsedPuzzleData,
-                    clues: parsedClues,
-                    correct_answer: correctAnswer,
-                    points_reward: pointsReward
-                });
-            }
-
-            btnWQCSaveQuestions.disabled = true;
-            btnWQCSaveQuestions.innerText = "Saving questions...";
-
-            try {
-                const response = await fetch(`${API_BASE}/admin/word-puzzle/questions/bulk/${contestId}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(questions)
-                });
-
-                if (!response.ok) throw new Error(await response.text());
-
-                showToast("Word contest questions saved successfully!");
-                loadWordManagerQuestions(contestId);
-            } catch (err) {
-                showToast("Failed to save: " + err.message, true);
-            } finally {
-                btnWQCSaveQuestions.disabled = false;
-                btnWQCSaveQuestions.innerText = "Save All Word Questions";
-            }
-        });
-    }
-});
 
 
 
